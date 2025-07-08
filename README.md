@@ -107,8 +107,8 @@ LOTTO SCIENTIFIC
 
 ```bash
 # 1. 저장소 클론
-git clone https://github.com/your-repo/lotto-scientific.git
-cd lotto-scientific
+git clone https://github.com/YonghoLee79/lotto.git
+cd lotto
 
 # 2. 가상환경 생성 (권장)
 python -m venv venv
@@ -585,7 +585,7 @@ copies or substantial portions of the Software.
 ## 📞 지원 및 문의
 
 - **이메일**: research@lotto-scientific.org
-- **이슈 트래커**: [GitHub Issues](https://github.com/your-repo/lotto-scientific/issues)
+- **이슈 트래커**: [GitHub Issues](https://github.com/YonghoLee79/lotto/issues)
 - **연구소**: Jackson-Hwang Computational Physics Lab
 - **라이선스**: MIT License
 
@@ -597,7 +597,7 @@ copies or substantial portions of the Software.
 
 *"분자운동의 무작위성에서 찾아낸 패턴, 통계적 열역학으로 예측하는 미래"*
 
-[![GitHub Stars](https://img.shields.io/github/stars/your-repo/lotto-scientific?style=social)](https://github.com/your-repo/lotto-scientific)
+[![GitHub Stars](https://img.shields.io/github/stars/YonghoLee79/lotto?style=social)](https://github.com/YonghoLee79/lotto)
 [![Research Lab](https://img.shields.io/badge/Research-Jackson--Hwang%20Lab-blue.svg)](https://jackson-hwang-lab.org)
 
 </div>
