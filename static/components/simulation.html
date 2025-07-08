@@ -1,0 +1,47 @@
+<!-- Simulation Section Component -->
+<section class="simulation-section">
+    <div class="section-header">
+        <h3>시뮬레이션</h3>
+        <span class="section-subtitle">분자 운동 기반 확률 분석</span>
+    </div>
+    
+    <div class="simulation-container">
+        <div class="simulation-controls">
+            <div class="upload-container" id="uploadContainer">
+                <input type="file" id="photoUpload" accept="image/*" hidden>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📸</div>
+                    <div class="upload-text">로또볼 사진 업로드</div>
+                    <div class="upload-subtext">또는 여기로 이미지를 끌어다 놓으세요</div>
+                </div>
+                <div class="image-preview-container" id="imagePreviewContainer">
+                    <img id="imagePreview" class="image-preview">
+                    <button id="removeImageBtn" class="remove-image-btn">✕</button>
+                </div>
+            </div>
+            
+            <div class="control-buttons">
+                <button id="analyzeImageBtn" class="control-btn analyze-btn" disabled>이미지 분석</button>
+                <button id="generateNumbersBtn" class="control-btn generate-btn" disabled>번호 생성</button>
+                <div id="analyzeProgress" class="analyze-progress">
+                    <div class="progress-bar"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="simulationCanvas"></canvas>
+            <div id="simulationOverlay" class="simulation-overlay">
+                <div class="overlay-content">
+                    <div class="loading-icon">⚛️</div>
+                    <div class="loading-text">시뮬레이션 준비 중...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="results-container">
+        <div id="resultNumbers" class="result-numbers"></div>
+        <div id="resultAnalysis" class="result-analysis"></div>
+    </div>
+</section>

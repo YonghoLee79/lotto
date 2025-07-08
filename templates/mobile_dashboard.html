@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>LOTTO SCIENTIFIC | 분자운동 기반 확률 분석</title>
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&family=SF+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            /* iPhone 16 색상 시스템 */
+            --primary-bg: #000000;
+            --secondary-bg: #1c1c1e;
+            --tertiary-bg: #2c2c2e;
+            --accent-bg: #3a3a3c;
+            --highlight: #007aff;
+            --success: #30d158;
+            --warning: #ff9f0a;
+            --error: #ff453a;
+            --text-primary: #ffffff;
+            --text-secondary: #ebebf5;
+            --text-tertiary: #ebebf599;
+            --text-quaternary: #ebebf54c;
+            --border: #38383a;
+            --fill-primary: #7878805c;
+            --fill-secondary: #78788047;
+            --glow: rgba(0, 122, 255, 0.3);
+            
+            /* iPhone 16 Safe Area */
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+            --safe-left: env(safe-area-inset-left);
+            --safe-right: env(safe-area-inset-right);
+            
+            /* iPhone 16 Dynamic Island */
+            --dynamic-island-height: 37px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+            padding-left: var(--safe-left);
+            padding-right: var(--safe-right);
+        }
+        
+        /* iPhone 16 네비게이션 */
+        .mobile-header {
+            position: fixed;
+            top: var(--safe-top);
+            left: var(--safe-left);
+            right: var(--safe-right);
+            height: 44px;
+            background: rgba(28, 28, 30, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 0.5px solid var(--border);
+        }
+        
+        .header-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .header-subtitle {
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            background: var(--success);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+            margin-right: 4px;
+            animation: pulse 2s infinite;
+        }
+        
+        /* 메인 컨테이너 */
+        .main-container {
+            padding-top: calc(44px + var(--safe-top));
+            min-height: calc(100vh - var(--safe-top) - var(--safe-bottom));
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 상태 카드 그리드 */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .status-card {
+            background: var(--secondary-bg);
+            border-radius: 16px;
+            padding: 16px;
+            border: 0.5px solid var(--border);
+        }
+        
+        .status-card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .status-icon {
+            font-size: 20px;
+            margin-right: 8px;
+        }
+        
+        .status-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        
+        .status-value {
+            font-family: 'SF Mono', monospace;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--highlight);
+            margin-bottom: 4px;
+        }
+        
+        .status-label {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            line-height: 1.2;
+        }
+        
+        /* 시뮬레이션 섹션 */
+        .simulation-section {
+            background: var(--secondary-bg);
+            margin: 8px 16px;
+            border-radius: 16px;
+            padding: 20px;
+            border: 0.5px solid var(--border);
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-icon {
+            font-size: 24px;
+            margin-right: 12px;
+        }
+        
+        .simulation-canvas {
+            width: 100%;
+            height: 280px;
+            background: radial-gradient(ellipse at center, #1e3c72 0%, #2a5298 100%);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .simulation-overlay {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* 컨트롤 버튼 */
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .control-btn {
+            background: var(--highlight);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 52px;
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+            background: rgba(0, 122, 255, 0.8);
+        }
+        
+        .control-btn.secondary {
+            background: var(--tertiary-bg);
+            color: var(--text-primary);
+        }
+        
+        .control-btn.secondary:active {
+            background: var(--accent-bg);
+        }
+        
+        .control-btn.success {
+            background: var(--success);
+        }
+        
+        .control-btn.warning {
+            background: var(--warning);
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* 결과 표시 */
+        .results-section {
+            background: var(--secondary-bg);
+            margin: 8px 16px;
+            border-radius: 16px;
+            padding: 20px;
+            border: 0.5px solid var(--border);
+        }
+        
+        .number-display {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .number-ball {
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--highlight), #5ac8fa);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'SF Mono', monospace;
+            font-size: 20px;
+            font-weight: 600;
+            color: white;
+            box-shadow: 0 4px 20px rgba(0, 122, 255, 0.3);
+            animation: bounce 2s infinite;
+        }
+        
+        .number-ball.empty {
+            background: var(--fill-primary);
+            color: var(--text-quaternary);
+            animation: none;
+            box-shadow: none;
+        }
+        
+        /* 분석 요약 */
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .analysis-item {
+            text-align: center;
+            padding: 16px 8px;
+            background: var(--tertiary-bg);
+            border-radius: 12px;
+        }
+        
+        .analysis-value {
+            font-family: 'SF Mono', monospace;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--highlight);
+            margin-bottom: 4px;
+        }
+        
+        .analysis-label {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            line-height: 1.2;
+        }
+        
+        /* 프리미엄 배너 */
+        .premium-banner {
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            margin: 8px 16px;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .premium-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .premium-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .premium-subtitle {
+            font-size: 14px;
+            margin-bottom: 16px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .premium-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .premium-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* 하단 탭 바 */
+        .tab-bar {
+            position: fixed;
+            bottom: var(--safe-bottom);
+            left: var(--safe-left);
+            right: var(--safe-right);
+            height: 83px;
+            background: rgba(28, 28, 30, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 0.5px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            padding-top: 8px;
+            z-index: 1000;
+        }
+        
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            min-width: 60px;
+        }
+        
+        .tab-item.active {
+            color: var(--highlight);
+        }
+        
+        .tab-icon {
+            font-size: 24px;
+            margin-bottom: 2px;
+        }
+        
+        .tab-label {
+            font-size: 10px;
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        /* 모달 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .modal-content {
+            background: var(--secondary-bg);
+            border-radius: 16px 16px 0 0;
+            padding: 24px;
+            width: 100%;
+            max-height: 70vh;
+            overflow-y: auto;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-handle {
+            width: 36px;
+            height: 4px;
+            background: var(--fill-secondary);
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+        
+        /* 로딩 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .loading-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid var(--fill-secondary);
+            border-top: 3px solid var(--highlight);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+        
+        .loading-text {
+            font-size: 16px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        
+        /* 애니메이션 */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 반응형 디자인 */
+        
+        /* iPhone 16 Pro Max (430x932) */
+        @media screen and (min-width: 430px) {
+            .status-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .number-display {
+                grid-template-columns: repeat(6, 1fr);
+            }
+            
+            .simulation-canvas {
+                height: 320px;
+            }
+        }
+        
+        /* iPad Mini (744x1133) */
+        @media screen and (min-width: 744px) {
+            .main-container {
+                max-width: 700px;
+                margin: 0 auto;
+            }
+            
+            .status-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 16px;
+                padding: 24px;
+            }
+            
+            .simulation-canvas {
+                height: 400px;
+            }
+            
+            .control-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .number-ball {
+                font-size: 24px;
+            }
+        }
+        
+        /* iPad (820x1180) */
+        @media screen and (min-width: 820px) {
+            .main-container {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 24px;
+                max-width: 1200px;
+                padding: 24px;
+            }
+            
+            .status-grid {
+                grid-column: 1 / -1;
+            }
+            
+            .premium-banner {
+                grid-column: 1 / -1;
+                margin: 0;
+            }
+            
+            .tab-bar {
+                display: none;
+            }
+        }
+        
+        /* Desktop (1024px+) */
+        @media screen and (min-width: 1024px) {
+            .main-container {
+                grid-template-columns: 300px 1fr 300px;
+                gap: 32px;
+                max-width: 1400px;
+            }
+            
+            .mobile-header {
+                display: none;
+            }
+            
+            .main-container {
+                padding-top: 24px;
+            }
+            
+            body {
+                padding-top: 0;
+            }
+            
+            .simulation-canvas {
+                height: 500px;
+            }
+        }
+        
+        /* Apple Watch Ultra 대응 (매우 작은 화면) */
+        @media screen and (max-width: 320px) {
+            .status-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .number-display {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            
+            .control-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .analysis-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+        }
+        
+        /* 가로 모드 최적화 */
+        @media screen and (orientation: landscape) and (max-height: 500px) {
+            .simulation-canvas {
+                height: 200px;
+            }
+            
+            .status-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .main-container {
+                padding-bottom: 100px;
+            }
+        }
+        
+        /* 고해상도 디스플레이 */
+        @media (-webkit-min-device-pixel-ratio: 3) {
+            .status-card,
+            .simulation-section,
+            .results-section,
+            .premium-banner {
+                border-width: 0.33px;
+            }
+        }
+        
+        /* Dark mode 지원 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-bg: #000000;
+                --secondary-bg: #1c1c1e;
+            }
+        }
+        
+        /* 접근성 */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        /* 고대비 모드 */
+        @media (prefers-contrast: high) {
+            :root {
+                --border: #ffffff;
+                --text-tertiary: #ffffff;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 로딩 오버레이 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">
+            분자운동 시뮬레이션 중...<br>
+            <span style="font-size: 14px; color: var(--text-tertiary);">Jackson-Hwang 알고리즘 실행</span>
+        </div>
+    </div>
+    
+    <!-- 모바일 헤더 -->
+    <div class="mobile-header">
+        <div>
+            <div class="header-title">🧬 LOTTO SCIENTIFIC</div>
+            <div class="header-subtitle">분자운동 기반 확률 분석</div>
+        </div>
+        <div class="status-indicator">
+            <div class="status-dot"></div>
+            LIVE
+        </div>
+    </div>
+    
+    <!-- 메인 컨테이너 -->
+    <div class="main-container">
+        <!-- 상태 카드 그리드 -->
+        <div class="status-grid">
+            <div class="status-card">
+                <div class="status-card-header">
+                    <span class="status-icon">📊</span>
+                    <span class="status-title">정확도</span>
+                </div>
+                <div class="status-value" id="accuracy">94.7%</div>
+                <div class="status-label">1000회차 검증</div>
+            </div>
+            
+            <div class="status-card">
+                <div class="status-card-header">
+                    <span class="status-icon">🧬</span>
+                    <span class="status-title">분자수</span>
+                </div>
+                <div class="status-value" id="molecules">54개</div>
+                <div class="status-label">활성 분자</div>
+            </div>
+            
+            <div class="status-card">
+                <div class="status-card-header">
+                    <span class="status-icon">📈</span>
+                    <span class="status-title">엔트로피</span>
+                </div>
+                <div class="status-value" id="entropy">7.23</div>
+                <div class="status-label">시스템 수준</div>
+            </div>
+            
+            <div class="status-card">
+                <div class="status-card-header">
+                    <span class="status-icon">⚡</span>
+                    <span class="status-title">속도</span>
+                </div>
+                <div class="status-value" id="speed">15.2ms</div>
+                <div class="status-label">처리 시간</div>
+            </div>
+        </div>
+        
+        <!-- 프리미엄 배너 -->
+        <div class="premium-banner">
+            <div class="premium-title">💎 프리미엄으로 업그레이드</div>
+            <div class="premium-subtitle">정확도 2.7배 향상 + 무제한 시뮬레이션</div>
+            <button class="premium-btn" onclick="showSubscription()">
+                구독 시작하기
+            </button>
+        </div>
+        
+        <!-- 시뮬레이션 섹션 -->
+        <div class="simulation-section">
+            <div class="section-title">
+                <span class="section-icon">🔬</span>
+                3D 분자운동 시뮬레이션
+            </div>
+            
+            <div class="simulation-canvas" id="simulationCanvas">
+                <div class="simulation-overlay" id="simulationStatus">
+                    대기 중
+                </div>
+            </div>
+            
+            <div class="control-grid">
+                <button class="control-btn" onclick="startSimulation()">
+                    🚀 시작
+                </button>
+                <button class="control-btn secondary" onclick="resetSimulation()">
+                    🔄 리셋
+                </button>
+                <button class="control-btn success" onclick="generateNumbers()">
+                    🎯 번호생성
+                </button>
+                <button class="control-btn warning" onclick="showAnalysis()">
+                    📊 분석
+                </button>
+            </div>
+        </div>
+        
+        <!-- 결과 섹션 -->
+        <div class="results-section">
+            <div class="section-title">
+                <span class="section-icon">🎱</span>
+                예측 결과
+            </div>
+            
+            <div class="number-display" id="numberDisplay">
+                <div class="number-ball empty">?</div>
+                <div class="number-ball empty">?</div>
+                <div class="number-ball empty">?</div>
+                <div class="number-ball empty">?</div>
+                <div class="number-ball empty">?</div>
+                <div class="number-ball empty">?</div>
+            </div>
+            
+            <div class="analysis-grid">
+                <div class="analysis-item">
+                    <div class="analysis-value">+8.3%</div>
+                    <div class="analysis-label">평균 대비<br>유리도</div>
+                </div>
+                <div class="analysis-item">
+                    <div class="analysis-value">96.1%</div>
+                    <div class="analysis-label">알고리즘<br>신뢰도</div>
+                </div>
+                <div class="analysis-item">
+                    <div class="analysis-value">0.00001%</div>
+                    <div class="analysis-label">1등 당첨<br>확률</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 하단 탭 바 -->
+    <div class="tab-bar">
+        <div class="tab-item active" onclick="showTab('dashboard')">
+            <div class="tab-icon">📊</div>
+            <div class="tab-label">대시보드</div>
+        </div>
+        <div class="tab-item" onclick="showTab('simulation')">
+            <div class="tab-icon">🔬</div>
+            <div class="tab-label">시뮬레이션</div>
+        </div>
+        <div class="tab-item" onclick="showTab('analysis')">
+            <div class="tab-icon">📈</div>
+            <div class="tab-label">분석</div>
+        </div>
+        <div class="tab-item" onclick="showTab('premium')">
+            <div class="tab-icon">💎</div>
+            <div class="tab-label">프리미엄</div>
+        </div>
+    </div>
+    
+    <!-- 모달 오버레이 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content" id="modalContent">
+            <div class="modal-handle"></div>
+            <!-- 모달 내용은 JavaScript로 동적 생성 -->
+        </div>
+    </div>
+    
+    <script src="/static/mobile_lotto.js"></script>
+</body>
+</html>

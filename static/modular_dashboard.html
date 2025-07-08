@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>LOTTO SCIENTIFIC | 분자운동 기반 확률 분석</title>
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&family=SF+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="mobile_styles.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body class="ios-device">
+    <!-- 헤더 컴포넌트 -->
+    <div id="header-component"></div>
+    
+    <main class="app-content">
+        <!-- 프리미엄 배너 컴포넌트 -->
+        <div id="premium-banner-component"></div>
+        
+        <!-- 잭팟 배너 컴포넌트 -->
+        <div id="jackpot-banner-component"></div>
+        
+        <!-- 최근 당첨자 컴포넌트 -->
+        <div id="recent-winners-component"></div>
+        
+        <!-- 과학적 기술 컴포넌트 -->
+        <div id="scientific-tech-component"></div>
+        
+        <!-- 시뮬레이션 컴포넌트 -->
+        <div id="simulation-component"></div>
+        
+        <!-- 통계 컴포넌트 -->
+        <div id="statistics-component"></div>
+    </main>
+    
+    <!-- 푸터 컴포넌트 -->
+    <div id="footer-component"></div>
+    
+    <!-- 모듈 스크립트 -->
+    <script src="js/ui-components.js"></script>
+    <script src="js/simulation-manager.js"></script>
+    <script src="js/api-manager.js"></script>
+    <script src="js/subscription-manager.js"></script>
+    <script src="science_visualizations.js"></script>
+    <script src="js/debug-utilities.js"></script>
+    <script src="js/main.js"></script>
+    
+    <script>
+        // 컴포넌트 로드 함수
+        async function loadComponent(containerId, componentPath) {
+            try {
+                const response = await fetch(componentPath);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const html = await response.text();
+                document.getElementById(containerId).innerHTML = html;
+            } catch (error) {
+                console.error(`컴포넌트 로드 실패 (${componentPath}):`, error);
+            }
+        }
+        
+        // 모든 컴포넌트 로드
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 컴포넌트 로드
+            await loadComponent('header-component', 'components/header.html');
+            await loadComponent('premium-banner-component', 'components/premium-banner.html');
+            await loadComponent('jackpot-banner-component', 'components/jackpot-banner.html');
+            await loadComponent('recent-winners-component', 'components/recent-winners.html');
+            await loadComponent('scientific-tech-component', 'components/scientific-tech.html');
+            await loadComponent('simulation-component', 'components/simulation.html');
+            await loadComponent('statistics-component', 'components/statistics.html');
+            await loadComponent('footer-component', 'components/footer.html');
+            
+            // 컴포넌트 로드 후 앱 초기화
+            if (window.app && !window.app.initialized) {
+                window.app.init();
+            }
+        });
+    </script>
+</body>
+</html>

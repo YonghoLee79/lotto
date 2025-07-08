@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D 애니메이션 디버깅</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        
+        h1 {
+            color: #2962ff;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .debug-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border-left: 5px solid #2962ff;
+        }
+        
+        .debug-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2962ff;
+        }
+        
+        pre {
+            background-color: #eee;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        
+        button {
+            background-color: #2962ff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            background-color: #1c54e9;
+        }
+        
+        .animation-container {
+            width: 100%;
+            height: 300px;
+            background-color: #131722;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e2f3ff;
+            border-radius: 5px;
+        }
+        
+        .log-container {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .error {
+            color: red;
+        }
+        
+        .info {
+            color: #2962ff;
+        }
+        
+        .success {
+            color: green;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .test-item {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .test-result {
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .passed {
+            color: green;
+        }
+        
+        .failed {
+            color: red;
+        }
+        
+        .details-list {
+            list-style-type: none;
+            padding-left: 5px;
+            margin-top: 10px;
+        }
+        
+        .details-list li {
+            margin-bottom: 3px;
+            font-size: 14px;
+        }
+        
+        .fix-suggestion {
+            background: #ffffd9;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 3px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>3D 애니메이션 디버깅</h1>
+        
+        <div class="debug-section">
+            <div class="debug-title">시스템 환경 진단</div>
+            <div class="test-grid">
+                <div class="test-item">
+                    <div>브라우저 정보</div>
+                    <div class="test-result" id="browser-info">확인 중...</div>
+                </div>
+                <div class="test-item">
+                    <div>WebGL 지원</div>
+                    <div class="test-result" id="webgl-support">확인 중...</div>
+                </div>
+                <div class="test-item">
+                    <div>WebGL 버전</div>
+                    <div class="test-result" id="webgl-version">확인 중...</div>
+                </div>
+                <div class="test-item">
+                    <div>THREE.js 상태</div>
+                    <div class="test-result" id="three-version">확인 중...</div>
+                </div>
+            </div>
+            <div id="webgl-details"></div>
+            <div id="fix-suggestions"></div>
+        </div>
+        
+        <div class="debug-section">
+            <div class="debug-title">Three.js 테스트</div>
+            <button id="test-basic-scene">기본 씬 렌더링 테스트</button>
+            <button id="test-rotation">회전 테스트</button>
+            <button id="test-textures">텍스처 테스트</button>
+            <div id="test-status" class="status">테스트를 실행하려면 버튼을 클릭하세요.</div>
+        </div>
+        
+        <div class="animation-container" id="test-container"></div>
+        
+        <div class="debug-section">
+            <div class="debug-title">BallAnimationManager 테스트</div>
+            <button id="test-init">초기화 테스트</button>
+            <button id="test-animation">애니메이션 테스트</button>
+            <div id="manager-status" class="status">테스트를 실행하려면 버튼을 클릭하세요.</div>
+        </div>
+        
+        <div class="debug-section">
+            <div class="debug-title">콘솔 로그</div>
+            <button id="clear-log">로그 지우기</button>
+            <div class="log-container" id="log-container"></div>
+        </div>
+        
+        <div class="debug-section">
+            <div class="debug-title">트러블슈팅 링크</div>
+            <ul>
+                <li><a href="https://threejs.org/docs/#manual/en/introduction/WebGL-compatibility-check" target="_blank">Three.js WebGL 호환성 체크 문서</a></li>
+                <li><a href="https://get.webgl.org/" target="_blank">WebGL 지원 테스트 페이지</a></li>
+                <li><a href="https://threejs.org/examples/" target="_blank">Three.js 공식 예제</a></li>
+                <li><a href="/animation-test">기본 애니메이션 테스트 페이지</a></li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Three.js 라이브러리 로컬 버전 -->
+    <script src="/static/js/three.min.js"></script>
+    
+    <!-- 로드 실패시 CDN에서 로드 -->
+    <script>
+        if (typeof THREE === 'undefined') {
+            console.warn('로컬 Three.js 로드 실패, CDN 버전으로 시도합니다.');
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r146/three.min.js';
+            document.head.appendChild(script);
+        }
+    </script>
+    
+    <!-- 애니메이션 스크립트 -->
+    <script src="/static/js/ball-animation.js"></script>
+    
+    <script>
+        // 콘솔 로그 오버라이드
+        (function() {
+            const oldLog = console.log;
+            const oldError = console.error;
+            const oldWarn = console.warn;
+            const logContainer = document.getElementById('log-container');
+            
+            console.log = function(message) {
+                // 원래 콘솔에 출력
+                oldLog.apply(console, arguments);
+                
+                // 페이지에 로그 추가
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry info';
+                logEntry.textContent = '로그: ' + formatMessage(message);
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            };
+            
+            console.error = function(message) {
+                // 원래 콘솔에 출력
+                oldError.apply(console, arguments);
+                
+                // 페이지에 로그 추가
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry error';
+                logEntry.textContent = '오류: ' + formatMessage(message);
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            };
+            
+            console.warn = function(message) {
+                // 원래 콘솔에 출력
+                oldWarn.apply(console, arguments);
+                
+                // 페이지에 로그 추가
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.textContent = '경고: ' + formatMessage(message);
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            };
+            
+            function formatMessage(message) {
+                if (typeof message === 'object') {
+                    try {
+                        return JSON.stringify(message);
+                    } catch (error) {
+                        return String(message);
+                    }
+                }
+                return String(message);
+            }
+            
+            // 로그 지우기 버튼
+            document.getElementById('clear-log').addEventListener('click', function() {
+                logContainer.innerHTML = '';
+            });
+        })();
+        
+        // WebGL 지원 확인 함수
+        function checkWebGLSupport() {
+            const webglSupportElement = document.getElementById('webgl-support');
+            const webglVersionElement = document.getElementById('webgl-version');
+            const webglDetailsElement = document.getElementById('webgl-details');
+            const fixSuggestionsElement = document.getElementById('fix-suggestions');
+            
+            try {
+                // WebGL 1.0 확인
+                const canvas = document.createElement('canvas');
+                const gl1 = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                
+                // WebGL 2.0 확인
+                const gl2 = canvas.getContext('webgl2');
+                
+                if (gl2) {
+                    webglSupportElement.textContent = '지원됨 (WebGL 2.0)';
+                    webglSupportElement.className = 'test-result passed';
+                    webglVersionElement.textContent = 'WebGL 2.0';
+                    webglVersionElement.className = 'test-result passed';
+                    
+                    // 추가 정보 표시
+                    const rendererInfo = gl2.getExtension('WEBGL_debug_renderer_info');
+                    let details = '<ul class="details-list">';
+                    
+                    if (rendererInfo) {
+                        const vendor = gl2.getParameter(rendererInfo.UNMASKED_VENDOR_WEBGL);
+                        const renderer = gl2.getParameter(rendererInfo.UNMASKED_RENDERER_WEBGL);
+                        details += `<li>그래픽 카드: ${renderer}</li>`;
+                        details += `<li>제조사: ${vendor}</li>`;
+                    }
+                    
+                    details += `<li>최대 텍스처 크기: ${gl2.getParameter(gl2.MAX_TEXTURE_SIZE)}</li>`;
+                    details += `<li>지원 확장: ${gl2.getSupportedExtensions().length}개</li>`;
+                    details += '</ul>';
+                    
+                    webglDetailsElement.innerHTML = details;
+                    
+                } else if (gl1) {
+                    webglSupportElement.textContent = '지원됨 (WebGL 1.0)';
+                    webglSupportElement.className = 'test-result passed';
+                    webglVersionElement.textContent = 'WebGL 1.0';
+                    webglVersionElement.className = 'test-result info';
+                    
+                    // 추가 정보 표시
+                    const rendererInfo = gl1.getExtension('WEBGL_debug_renderer_info');
+                    let details = '<ul class="details-list">';
+                    
+                    if (rendererInfo) {
+                        const vendor = gl1.getParameter(rendererInfo.UNMASKED_VENDOR_WEBGL);
+                        const renderer = gl1.getParameter(rendererInfo.UNMASKED_RENDERER_WEBGL);
+                        details += `<li>그래픽 카드: ${renderer}</li>`;
+                        details += `<li>제조사: ${vendor}</li>`;
+                    }
+                    
+                    details += `<li>최대 텍스처 크기: ${gl1.getParameter(gl1.MAX_TEXTURE_SIZE)}</li>`;
+                    details += `<li>지원 확장: ${gl1.getSupportedExtensions().length}개</li>`;
+                    details += '</ul>';
+                    
+                    webglDetailsElement.innerHTML = details;
+                    
+                    // WebGL 1.0만 지원하는 경우 권장사항
+                    fixSuggestionsElement.innerHTML = `
+                        <div class="fix-suggestion">
+                            <p>현재 브라우저는 WebGL 1.0만 지원합니다. Three.js는 호환되지만 일부 고급 기능이 제한될 수 있습니다.</p>
+                            <p>권장사항: 최신 버전의 Chrome, Firefox, Safari 또는 Edge를 사용하세요.</p>
+                        </div>
+                    `;
+                    
+                } else {
+                    webglSupportElement.textContent = '지원되지 않음';
+                    webglSupportElement.className = 'test-result failed';
+                    webglVersionElement.textContent = '없음';
+                    webglVersionElement.className = 'test-result failed';
+                    
+                    // WebGL이 지원되지 않는 경우 권장사항
+                    fixSuggestionsElement.innerHTML = `
+                        <div class="fix-suggestion">
+                            <p>현재 브라우저에서 WebGL이 지원되지 않습니다. 3D 애니메이션을 표시할 수 없습니다.</p>
+                            <p>해결 방법:</p>
+                            <ul>
+                                <li>브라우저를 최신 버전으로 업데이트하세요.</li>
+                                <li>그래픽 드라이버를 최신 버전으로 업데이트하세요.</li>
+                                <li>브라우저 설정에서 하드웨어 가속을 활성화하세요.</li>
+                                <li>다른 브라우저(Chrome, Firefox)를 사용해보세요.</li>
+                            </ul>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                webglSupportElement.textContent = '오류 발생';
+                webglSupportElement.className = 'test-result failed';
+                webglVersionElement.textContent = '확인 불가';
+                webglVersionElement.className = 'test-result failed';
+                console.error('WebGL 지원 확인 중 오류:', error);
+                
+                fixSuggestionsElement.innerHTML = `
+                    <div class="fix-suggestion">
+                        <p>WebGL 지원을 확인하는 중 오류가 발생했습니다: ${error.message}</p>
+                        <p>브라우저 설정에서 JavaScript 및 WebGL이 활성화되어 있는지 확인하세요.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // 브라우저 정보 표시
+        function showBrowserInfo() {
+            const browserInfoElement = document.getElementById('browser-info');
+            const userAgent = navigator.userAgent;
+            let browserName = "알 수 없음";
+            let browserVersion = "";
+            
+            if (userAgent.indexOf("Firefox") > -1) {
+                browserName = "Firefox";
+                browserVersion = userAgent.match(/Firefox\/([0-9.]+)/)[1];
+            } else if (userAgent.indexOf("Chrome") > -1 && userAgent.indexOf("Edg") === -1) {
+                browserName = "Chrome";
+                browserVersion = userAgent.match(/Chrome\/([0-9.]+)/)[1];
+            } else if (userAgent.indexOf("Safari") > -1 && userAgent.indexOf("Chrome") === -1) {
+                browserName = "Safari";
+                browserVersion = userAgent.match(/Version\/([0-9.]+)/)[1];
+            } else if (userAgent.indexOf("Edg") > -1) {
+                browserName = "Edge";
+                browserVersion = userAgent.match(/Edg\/([0-9.]+)/)[1];
+            } else if (userAgent.indexOf("OPR") > -1 || userAgent.indexOf("Opera") > -1) {
+                browserName = "Opera";
+                browserVersion = userAgent.match(/(?:OPR|Opera)\/([0-9.]+)/)[1];
+            }
+            
+            browserInfoElement.textContent = `${browserName} ${browserVersion}`;
+            browserInfoElement.className = 'test-result info';
+        }
+        
+        // THREE.js 버전 확인
+        function checkThreeVersion() {
+            const threeVersionElement = document.getElementById('three-version');
+            if (typeof THREE !== 'undefined') {
+                threeVersionElement.textContent = `로드됨 (r${THREE.REVISION})`;
+                threeVersionElement.className = 'test-result passed';
+            } else {
+                threeVersionElement.textContent = '로드되지 않음';
+                threeVersionElement.className = 'test-result failed';
+                
+                // THREE.js가 로드되지 않은 경우 권장사항
+                document.getElementById('fix-suggestions').innerHTML += `
+                    <div class="fix-suggestion">
+                        <p>Three.js 라이브러리가 로드되지 않았습니다.</p>
+                        <p>해결 방법:</p>
+                        <ul>
+                            <li>인터넷 연결을 확인하세요.</li>
+                            <li>브라우저 캐시를 비우고 새로고침하세요.</li>
+                            <li>브라우저의 개발자 도구에서 콘솔 오류를 확인하세요.</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+        
+        // 기본 씬 렌더링 테스트
+        function testBasicScene() {
+            const testContainer = document.getElementById('test-container');
+            const testStatus = document.getElementById('test-status');
+            
+            // 컨테이너 초기화
+            while (testContainer.firstChild) {
+                testContainer.removeChild(testContainer.firstChild);
+            }
+            
+            testStatus.textContent = '기본 씬 테스트 중...';
+            
+            try {
+                if (typeof THREE === 'undefined') {
+                    throw new Error('THREE.js가 로드되지 않았습니다.');
+                }
+                
+                // 캔버스 생성
+                const canvas = document.createElement('canvas');
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                testContainer.appendChild(canvas);
+                
+                // Three.js 초기화
+                const scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x113366);
+                
+                const camera = new THREE.PerspectiveCamera(
+                    75, 
+                    testContainer.clientWidth / testContainer.clientHeight, 
+                    0.1, 
+                    1000
+                );
+                camera.position.z = 5;
+                
+                const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+                renderer.setSize(testContainer.clientWidth, testContainer.clientHeight);
+                
+                // 간단한 큐브 생성
+                const geometry = new THREE.BoxGeometry(1, 1, 1);
+                const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+                const cube = new THREE.Mesh(geometry, material);
+                scene.add(cube);
+                
+                // 렌더링
+                renderer.render(scene, camera);
+                
+                testStatus.textContent = '기본 씬 테스트 성공! (녹색 와이어프레임 큐브가 보여야 합니다)';
+                testStatus.className = 'status success';
+                
+            } catch (error) {
+                testStatus.textContent = '기본 씬 테스트 실패: ' + error.message;
+                testStatus.className = 'status error';
+                console.error('기본 씬 테스트 실패:', error);
+            }
+        }
+        
+        // 회전 테스트
+        function testRotation() {
+            const testContainer = document.getElementById('test-container');
+            const testStatus = document.getElementById('test-status');
+            
+            // 컨테이너 초기화
+            while (testContainer.firstChild) {
+                testContainer.removeChild(testContainer.firstChild);
+            }
+            
+            testStatus.textContent = '회전 테스트 중...';
+            
+            try {
+                if (typeof THREE === 'undefined') {
+                    throw new Error('THREE.js가 로드되지 않았습니다.');
+                }
+                
+                // 캔버스 생성
+                const canvas = document.createElement('canvas');
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                testContainer.appendChild(canvas);
+                
+                // Three.js 초기화
+                const scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x113366);
+                
+                const camera = new THREE.PerspectiveCamera(
+                    75, 
+                    testContainer.clientWidth / testContainer.clientHeight, 
+                    0.1, 
+                    1000
+                );
+                camera.position.z = 5;
+                
+                const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+                renderer.setSize(testContainer.clientWidth, testContainer.clientHeight);
+                
+                // 큐브 생성
+                const geometry = new THREE.BoxGeometry(1, 1, 1);
+                const material = new THREE.MeshNormalMaterial();
+                const cube = new THREE.Mesh(geometry, material);
+                scene.add(cube);
+                
+                // 애니메이션 함수
+                let animationId;
+                function animate() {
+                    animationId = requestAnimationFrame(animate);
+                    
+                    cube.rotation.x += 0.01;
+                    cube.rotation.y += 0.01;
+                    
+                    renderer.render(scene, camera);
+                }
+                
+                // 애니메이션 시작
+                animate();
+                
+                testStatus.textContent = '회전 테스트 성공! (컬러풀한 큐브가 회전해야 합니다)';
+                testStatus.className = 'status success';
+                
+                // 10초 후 애니메이션 중지
+                setTimeout(() => {
+                    cancelAnimationFrame(animationId);
+                }, 10000);
+                
+            } catch (error) {
+                testStatus.textContent = '회전 테스트 실패: ' + error.message;
+                testStatus.className = 'status error';
+                console.error('회전 테스트 실패:', error);
+            }
+        }
+        
+        // 초기화 테스트
+        function testInit() {
+            const testStatus = document.getElementById('manager-status');
+            testStatus.textContent = 'BallAnimationManager 초기화 테스트 중...';
+            
+            try {
+                const manager = new BallAnimationManager();
+                console.log('BallAnimationManager 인스턴스 생성됨:', manager);
+                
+                const success = manager.init('test-container');
+                if (success) {
+                    testStatus.textContent = '초기화 성공!';
+                    testStatus.className = 'status success';
+                    console.log('초기화 성공');
+                } else {
+                    testStatus.textContent = '초기화 실패!';
+                    testStatus.className = 'status error';
+                    console.error('초기화 실패');
+                }
+            } catch (error) {
+                testStatus.textContent = '오류 발생: ' + error.message;
+                testStatus.className = 'status error';
+                console.error('초기화 중 오류 발생:', error);
+            }
+        }
+        
+        // 애니메이션 테스트
+        function testAnimation() {
+            const testStatus = document.getElementById('manager-status');
+            testStatus.textContent = '애니메이션 테스트 중...';
+            
+            try {
+                const manager = new BallAnimationManager();
+                const success = manager.init('test-container');
+                
+                if (success) {
+                    // 테스트 이미지 URL
+                    const testImageUrl = 'https://img.sportsworldi.com/content/image/2020/07/20/20200720511893.jpg';
+                    
+                    manager.processUserImage(testImageUrl, function(result) {
+                        if (result) {
+                            testStatus.textContent = '애니메이션 시작됨!';
+                            testStatus.className = 'status success';
+                            console.log('애니메이션 시작됨');
+                        } else {
+                            testStatus.textContent = '애니메이션 시작 실패!';
+                            testStatus.className = 'status error';
+                            console.error('애니메이션 시작 실패');
+                        }
+                    });
+                } else {
+                    testStatus.textContent = '초기화 실패!';
+                    testStatus.className = 'status error';
+                }
+            } catch (error) {
+                testStatus.textContent = '오류 발생: ' + error.message;
+                testStatus.className = 'status error';
+                console.error('애니메이션 테스트 중 오류 발생:', error);
+            }
+        }
+        
+        // 초기화 후 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            // 시스템 진단 실행
+            showBrowserInfo();
+            checkWebGLSupport();
+            setTimeout(checkThreeVersion, 500); // THREE.js가 비동기로 로드될 수 있으므로 약간의 지연
+            
+            // 테스트 버튼 이벤트 리스너
+            document.getElementById('test-basic-scene').addEventListener('click', testBasicScene);
+            document.getElementById('test-rotation').addEventListener('click', testRotation);
+            document.getElementById('test-init').addEventListener('click', testInit);
+            document.getElementById('test-animation').addEventListener('click', testAnimation);
+        });
+    </script>
+</body>
+</html>

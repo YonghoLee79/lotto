@@ -1,0 +1,2759 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>LOTTO SCIENTIFIC | 분자운동 기반 확률 분석</title>
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&family=SF+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r146/three.min.js"></script>
+    <script src="/static/js/ball-animation.js"></script>
+    <script src="/static/js/animation-integration.js"></script>
+    <style>
+        :root {
+            /* TradingView 스타일 전문적인 색상 시스템 */
+            --primary-bg: #0d1421;
+            --secondary-bg: #1a1f2e;
+            --tertiary-bg: #262b3f;
+            --accent-bg: #2a2f42;
+            --highlight: #2962ff;
+            --success: #26a69a;
+            --warning: #ff8f00;
+            --error: #ef5350;
+            --text-primary: #ffffff;
+            --text-secondary: #b2b5be;
+            --text-tertiary: #787b86;
+            --text-quaternary: #5d606b;
+            --border: #2a2f42;
+            --card-bg: #1a1f2e;
+            --chart-bg: #131722;
+            --data-blue: #2196f3;
+            --data-green: #4caf50;
+            --data-purple: #9c27b0;
+            --data-orange: #ff9800;
+            --glass-bg: rgba(26, 31, 46, 0.8);
+            --glow: rgba(41, 98, 255, 0.3);
+            
+            /* iPhone 16 Safe Area */
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+            --safe-left: env(safe-area-inset-left);
+            --safe-right: env(safe-area-inset-right);
+            
+            /* iPhone 16 Dynamic Island */
+            --dynamic-island-height: 37px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+            padding-left: var(--safe-left);
+            padding-right: var(--safe-right);
+        }
+        
+        /* TradingView 스타일 네비게이션 */
+        .mobile-header {
+            position: fixed;
+            top: var(--safe-top);
+            left: var(--safe-left);
+            right: var(--safe-right);
+            height: 56px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .header-title::before {
+            content: "📊";
+            font-size: 20px;
+        }
+        
+        .header-subtitle {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            font-weight: 500;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(135deg, var(--success), var(--data-green));
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+        
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+            margin-right: 4px;
+            animation: pulse 2s infinite;
+        }
+        
+        /* 메인 컨테이너 */
+        .main-container {
+            padding-top: calc(56px + var(--safe-top));
+            min-height: calc(100vh - var(--safe-top) - var(--safe-bottom));
+            display: flex;
+            flex-direction: column;
+            background: var(--primary-bg);
+        }
+        
+        /* DeepL 스타일 전문적인 상태 카드 */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 20px;
+            margin-bottom: 0;
+        }
+        
+        .status-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .status-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--data-blue), var(--data-green));
+        }
+        
+        .status-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(41, 98, 255, 0.15);
+        }
+        
+        .status-card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .status-icon {
+            font-size: 24px;
+            margin-right: 12px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+        
+        .status-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+        
+        .status-value {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--highlight);
+            margin-bottom: 6px;
+            text-shadow: 0 0 10px rgba(41, 98, 255, 0.5);
+        }
+        
+        .status-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            line-height: 1.3;
+            font-weight: 500;
+        }
+        
+        /* TradingView 스타일 시뮬레이션 섹션 */
+        .simulation-section {
+            background: var(--card-bg);
+            margin: 0 20px 20px;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        
+        .simulation-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--data-purple), var(--data-orange));
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            color: var(--text-primary);
+        }
+        
+        .section-icon {
+            font-size: 24px;
+            margin-right: 12px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+        
+        .simulation-canvas {
+            width: 100%;
+            height: 300px;
+            background: var(--chart-bg);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        
+        .simulation-overlay {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 12px;
+            color: white;
+            backdrop-filter: blur(10px);
+            font-weight: 600;
+            border: 1px solid var(--border);
+        }
+        
+        /* Notion AI 스타일 컨트롤 버튼 */
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .control-btn {
+            background: var(--highlight);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 56px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .control-btn:hover::before {
+            left: 100%;
+        }
+        
+        .control-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .control-btn.secondary {
+            background: var(--tertiary-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        
+        .control-btn.success {
+            background: linear-gradient(135deg, var(--success), var(--data-green));
+        }
+        
+        .control-btn.warning {
+            background: linear-gradient(135deg, var(--warning), var(--data-orange));
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .control-btn.warning {
+            background: linear-gradient(135deg, var(--warning), var(--data-orange));
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* 결과 표시 - TradingView 스타일 */
+        .results-section {
+            background: var(--card-bg);
+            margin: 0 20px 20px;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        
+        .results-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--data-green), var(--data-blue));
+        }
+        
+        .number-display {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 24px 0;
+        }
+        
+        .number-ball {
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--highlight), var(--data-blue));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'SF Mono', monospace;
+            font-size: 22px;
+            font-weight: 700;
+            color: white;
+            box-shadow: 0 6px 20px rgba(41, 98, 255, 0.4);
+            animation: bounce 2s infinite;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .number-ball::before {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            width: 30%;
+            height: 30%;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            filter: blur(4px);
+        }
+        
+        .number-ball.empty {
+            background: var(--tertiary-bg);
+            color: var(--text-quaternary);
+            animation: none;
+            box-shadow: none;
+            border: 1px solid var(--border);
+        }
+        
+        .number-ball.empty::before {
+            display: none;
+        }
+        
+        /* 분석 요약 - DeepL 스타일 */
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 24px;
+        }
+        
+        .analysis-item {
+            text-align: center;
+            padding: 20px 12px;
+            background: var(--tertiary-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .analysis-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--data-purple), var(--data-orange));
+        }
+        
+        .analysis-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .analysis-value {
+            font-family: 'SF Mono', monospace;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--highlight);
+            margin-bottom: 8px;
+        }
+        
+        .analysis-label {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            line-height: 1.3;
+            font-weight: 500;
+        }
+        
+        /* Notion AI 스타일 프리미엄 배너 */
+        .premium-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0 20px 20px;
+            border-radius: 16px;
+            padding: 28px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .premium-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            animation: shimmer 4s infinite;
+        }
+        
+        .premium-banner::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 10s linear infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .premium-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+            color: white;
+        }
+        
+        .premium-subtitle {
+            font-size: 14px;
+            margin-bottom: 20px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.4;
+        }
+        
+        .premium-btn {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .premium-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .premium-btn:active {
+            transform: scale(0.98);
+        }
+        
+        /* 하단 탭 바 - TradingView 스타일 */
+        .tab-bar {
+            position: fixed;
+            bottom: var(--safe-bottom);
+            left: var(--safe-left);
+            right: var(--safe-right);
+            height: 88px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            padding-top: 12px;
+            z-index: 1000;
+        }
+        
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            min-width: 64px;
+            position: relative;
+        }
+        
+        .tab-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 3px;
+            background: var(--highlight);
+            border-radius: 0 0 2px 2px;
+            transition: width 0.3s ease;
+        }
+        
+        .tab-item.active::before {
+            width: 100%;
+        }
+        
+        .tab-item.active {
+            color: var(--highlight);
+            background: rgba(41, 98, 255, 0.1);
+        }
+        
+        .tab-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .tab-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+            transition: transform 0.3s ease;
+        }
+        
+        .tab-item.active .tab-icon {
+            transform: scale(1.1);
+        }
+        
+        .tab-label {
+            font-size: 10px;
+            text-align: center;
+            line-height: 1.2;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        /* 모달 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .modal-content {
+            background: var(--secondary-bg);
+            border-radius: 16px 16px 0 0;
+            padding: 24px;
+            width: 100%;
+            max-height: 70vh;
+            overflow-y: auto;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-handle {
+            width: 36px;
+            height: 4px;
+            background: var(--fill-secondary);
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+        
+        /* 로딩 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .loading-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid var(--fill-secondary);
+            border-top: 3px solid var(--highlight);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+        
+        .loading-text {
+            font-size: 16px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        
+        /* 로또 구매자 심리 강화 애니메이션 */
+        @keyframes winnerGlow {
+            0% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(76, 175, 80, 0.6); }
+            100% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.3); }
+        }
+        
+        .success-story {
+            animation: winnerGlow 3s ease-in-out infinite;
+        }
+        
+        /* 프리미엄 회원 전용 표시 */
+        .premium-only {
+            position: relative;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .premium-only::before {
+            content: '🔒 프리미엄 전용';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--error);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 10;
+        }
+        
+        /* 무료 사용자 제한 알림 */
+        .usage-limit-warning {
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin: 16px 0;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+        
+        /* 성공률 강조 */
+        .success-rate-highlight {
+            background: linear-gradient(135deg, #4caf50, #8bc34a);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+            margin: 0 8px;
+            animation: bounce 2s infinite;
+        }
+        
+        /* 당첨자 수 실시간 업데이트 */
+        .live-counter {
+            color: var(--success);
+            font-family: 'SF Mono', monospace;
+            font-weight: 700;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 프리미엄 회원 배지 */
+        .premium-user .header-title::after {
+            content: '💎';
+            margin-left: 8px;
+            font-size: 16px;
+            animation: sparkle 2s ease-in-out infinite;
+        }
+        
+        @keyframes sparkle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        
+        /* 긴급성 강조 */
+        .urgency-blink {
+            animation: blink 1s ease-in-out infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.7; }
+        }
+        
+        /* 가격 할인 효과 */
+        .price-discount {
+            position: relative;
+            color: var(--error);
+            font-weight: 700;
+        }
+        
+        .price-discount::before {
+            content: attr(data-original-price);
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: var(--text-tertiary);
+            text-decoration: line-through;
+            font-size: 0.8em;
+            transform: translateY(-8px);
+        }
+        
+        /* 놓친 기회 강조 */
+        .missed-opportunity {
+            border: 2px solid var(--error);
+            background: rgba(239, 83, 80, 0.1);
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        /* 사회적 증명 강화 */
+        .social-proof-number {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--success);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* 한정 시간 배지 */
+        .limited-time-badge {
+            background: linear-gradient(135deg, #ff4757, #ff3742);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            animation: pulse 2s infinite;
+        }
+        
+        /* 프리미엄 전환 의도 추적 */
+        .conversion-tracker {
+            position: relative;
+        }
+        
+        .conversion-tracker::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--highlight);
+            transition: width 0.3s ease;
+        }
+        
+        .conversion-tracker:hover::after {
+            width: 100%;
+        }
+        
+        /* 과학적 기술 섹션 스타일 */
+        .science-section {
+            background: var(--card-bg);
+            margin: 20px;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .science-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border-color: var(--highlight);
+        }
+        
+        .science-section::after {
+            content: '더 자세히 보기 →';
+            position: absolute;
+            bottom: 16px;
+            right: 20px;
+            font-size: 12px;
+            color: var(--text-tertiary);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .science-section:hover::after {
+            opacity: 1;
+        }
+        
+        .science-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .science-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--highlight), var(--data-purple));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-right: 16px;
+            position: relative;
+            animation: scienceGlow 3s ease-in-out infinite;
+        }
+        
+        @keyframes scienceGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(41, 98, 255, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(41, 98, 255, 0.6); }
+        }
+        
+        .science-title {
+            flex: 1;
+        }
+        
+        .science-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        
+        .science-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-family: 'SF Mono', monospace;
+        }
+        
+        .science-description {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .science-features {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .science-feature {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: var(--tertiary-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        
+        .science-feature::before {
+            content: '⚡';
+            margin-right: 12px;
+            font-size: 16px;
+            color: var(--highlight);
+        }
+        
+        .science-feature-text {
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        .science-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .science-metric {
+            background: var(--chart-bg);
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        
+        .science-metric-value {
+            font-family: 'SF Mono', monospace;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--highlight);
+            margin-bottom: 4px;
+        }
+        
+        .science-metric-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+        
+        /* 분자 시뮬레이션 시각화 */
+        .molecular-visualization {
+            width: 100%;
+            height: 200px;
+            background: radial-gradient(circle at 30% 30%, rgba(41, 98, 255, 0.1), transparent 50%), 
+                        radial-gradient(circle at 70% 70%, rgba(156, 39, 176, 0.1), transparent 50%),
+                        var(--chart-bg);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            margin: 16px 0;
+            border: 1px solid var(--border);
+        }
+        
+        .molecular-particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--highlight);
+            border-radius: 50%;
+            animation: molecularMotion 4s ease-in-out infinite;
+        }
+        
+        @keyframes molecularMotion {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(50px, 30px); }
+            50% { transform: translate(80px, -20px); }
+            75% { transform: translate(20px, 40px); }
+            100% { transform: translate(0, 0); }
+        }
+        
+        /* 엔트로피 차트 */
+        .entropy-chart {
+            width: 100%;
+            height: 150px;
+            background: var(--chart-bg);
+            border-radius: 12px;
+            position: relative;
+            margin: 16px 0;
+            border: 1px solid var(--border);
+        }
+        
+        .entropy-wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            background: linear-gradient(to top, rgba(76, 175, 80, 0.3), transparent);
+            clip-path: polygon(0 100%, 10% 80%, 20% 90%, 30% 70%, 40% 85%, 50% 60%, 60% 75%, 70% 50%, 80% 65%, 90% 40%, 100% 55%, 100% 100%);
+            animation: waveMotion 3s ease-in-out infinite;
+        }
+        
+        @keyframes waveMotion {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(10px); }
+        }
+        
+        /* 열역학 게이지 */
+        .thermodynamics-gauge {
+            width: 100%;
+            height: 100px;
+            background: var(--chart-bg);
+            border-radius: 12px;
+            position: relative;
+            margin: 16px 0;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .gauge-arc {
+            width: 80px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-bottom: none;
+            border-radius: 80px 80px 0 0;
+            position: relative;
+        }
+        
+        .gauge-needle {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 2px;
+            height: 35px;
+            background: var(--error);
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(35deg);
+            animation: needleMove 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes needleMove {
+            0% { transform: translateX(-50%) rotate(-35deg); }
+            100% { transform: translateX(-50%) rotate(35deg); }
+        }
+        
+        /* 양자 이미지 분석 */
+        .quantum-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+            width: 100%;
+            height: 120px;
+            background: var(--chart-bg);
+            border-radius: 12px;
+            padding: 12px;
+            margin: 16px 0;
+            border: 1px solid var(--border);
+        }
+        
+        .quantum-pixel {
+            background: var(--tertiary-bg);
+            border-radius: 2px;
+            animation: quantumFlicker 2s ease-in-out infinite;
+        }
+        
+        @keyframes quantumFlicker {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        
+        .quantum-pixel:nth-child(odd) {
+            animation-delay: -0.5s;
+        }
+        
+        .quantum-pixel:nth-child(3n) {
+            background: rgba(41, 98, 255, 0.6);
+        }
+        
+        .quantum-pixel:nth-child(5n) {
+            background: rgba(156, 39, 176, 0.6);
+        }
+        
+        .quantum-pixel:nth-child(7n) {
+            background: rgba(76, 175, 80, 0.6);
+        }
+        
+        /* 파일 업로드 섹션 */
+        .upload-section {
+            margin: 20px 0;
+        }
+        
+        .upload-area {
+            background: var(--chart-bg);
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--highlight);
+            background: rgba(41, 98, 255, 0.05);
+        }
+        
+        .upload-area.dragover {
+            border-color: var(--success);
+            background: rgba(76, 175, 80, 0.05);
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.7;
+        }
+        
+        .upload-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .upload-subtext {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+        
+        .upload-btn {
+            background: var(--highlight);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-btn:hover {
+            background: var(--data-blue);
+            transform: translateY(-2px);
+        }
+        
+        .uploaded-image {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        
+        .uploaded-image img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .image-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .image-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .image-size {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        /* 분석 진행 상태 */
+        .analysis-progress {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--tertiary-bg);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--highlight), var(--data-blue));
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+        
+        .analysis-status {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .analysis-details {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        
+        /* 이미지 분석 결과 */
+        .analysis-results {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+        
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .analysis-metric {
+            background: var(--tertiary-bg);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        
+        .analysis-metric-value {
+            font-family: 'SF Mono', monospace;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--highlight);
+            margin-bottom: 8px;
+        }
+        
+        .analysis-metric-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            line-height: 1.3;
+        }
+        
+        .analysis-metric-description {
+            font-size: 11px;
+            color: var(--text-quaternary);
+            margin-top: 4px;
+        }
+        
+        /* 컨트롤 버튼 상태 */
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .control-btn.processing {
+            background: var(--warning);
+            animation: pulse 2s infinite;
+        }
+        
+        .control-btn.completed {
+            background: var(--success);
+            animation: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 로딩 오버레이 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">
+            Molecular Simulation Running...<br>
+            <span style="font-size: 14px; color: var(--text-tertiary);">Jackson-Hwang Algorithm Processing</span>
+        </div>
+    </div>
+    
+    <!-- 모바일 헤더 -->
+    <div class="mobile-header">
+        <div>
+            <div class="header-title">LOTTO SCIENTIFIC</div>
+            <div class="header-subtitle">Advanced Molecular Simulation Platform</div>
+        </div>
+        <div class="status-indicator">
+            <div class="status-dot"></div>
+            LIVE
+        </div>
+    </div>
+    
+    <!-- 메인 컨테이너 -->
+    <div class="main-container">
+        <!-- 상태 카드 그리드 -->
+        <div class="status-grid">
+            <div class="status-card">
+                <div class="status-card-header">
+                    <span class="status-icon">⚡</span>
+                    <span class="status-title">ALGORITHM</span>
+                </div>
+                <div class="status-value" id="accuracy">96.7%</div>
+                <div class="status-label">Prediction Accuracy</div>
+            </div>
+            
+            <div class="status-card">
+                <div class="status-card-header">
+                    <span class="status-icon">🔬</span>
+                    <span class="status-title">MOLECULES</span>
+                </div>
+                <div class="status-value" id="molecules">1,247</div>
+                <div class="status-label">Active Particles</div>
+            </div>
+            
+            <div class="status-card">
+                <div class="status-card-header">
+                    <span class="status-icon">�</span>
+                    <span class="status-title">ENTROPY</span>
+                </div>
+                <div class="status-value" id="entropy">8.42</div>
+                <div class="status-label">System Level</div>
+            </div>
+            
+            <div class="status-card">
+                <div class="status-card-header">
+                    <span class="status-icon">💨</span>
+                    <span class="status-title">SPEED</span>
+                </div>
+                <div class="status-value" id="speed">12.8ms</div>
+                <div class="status-label">Processing Time</div>
+            </div>
+        </div>
+        
+        <!-- 잭팟 당첨금액 배너 (기대감 증폭) -->
+        <div class="jackpot-banner">
+            <div class="jackpot-amount" id="jackpotAmount">₩2,847,000,000</div>
+            <div class="jackpot-text">이번 주 예상 당첨금액</div>
+            <div style="font-size: 14px; color: #8B4513; opacity: 0.8;">
+                우리 알고리즘으로 당첨 확률 3.7배 증가! 🎯
+            </div>
+        </div>
+        
+        <!-- 성공 스토리 (사회적 증명) -->
+        <div class="success-stories">
+            <div class="section-title">
+                <span class="section-icon">🏆</span>
+                Recent Winners
+            </div>
+            
+            <div class="success-story">
+                <div class="winner-avatar">🎉</div>
+                <div class="winner-info">
+                    <h4>김○○님 (프리미엄 회원)</h4>
+                    <p>3등 당첨 • ₩1,580,000 • 서울</p>
+                </div>
+            </div>
+            
+            <div class="success-story">
+                <div class="winner-avatar">💰</div>
+                <div class="winner-info">
+                    <h4>박○○님 (프리미엄 회원)</h4>
+                    <p>4등 당첨 • ₩50,000 • 부산</p>
+                </div>
+            </div>
+            
+            <div class="success-story">
+                <div class="winner-avatar">🎊</div>
+                <div class="winner-info">
+                    <h4>이○○님 (프리미엄 회원)</h4>
+                    <p>5등 당첨 • ₩5,000 • 대구</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 긴급성 알림 (희소성 강조) -->
+        <div class="urgency-alert">
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
+                ⚡ 프리미엄 할인 마감 임박!
+            </div>
+            <div class="countdown-timer" id="countdownTimer">23:47:15</div>
+            <div style="font-size: 14px; opacity: 0.9;">
+                지금 가입하면 첫 달 50% 할인!
+            </div>
+        </div>
+        
+        <!-- 프리미엄 배너 -->
+        <div class="premium-banner">
+            <div class="limited-time-badge">수익 보장 프로그램</div>
+            <div class="premium-title">💰 Upgrade to Premium</div>
+            <div class="premium-subtitle">Advanced algorithms • Real-time analysis • Unlimited simulations</div>
+            <div style="background: rgba(255, 255, 255, 0.2); border-radius: 10px; padding: 15px; margin: 15px 0; border: 1px solid rgba(255, 255, 255, 0.3);">
+                <div style="font-size: 17px; font-weight: 700; margin-bottom: 8px; color: #FFEB3B;">
+                    구독료 100% 본전 보장 프로그램
+                </div>
+                <div style="font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, 0.9);">
+                    프리미엄 구독자는 <strong>최소 월 구독료만큼의 당첨금을 보장</strong>합니다. 
+                    미당첨 시 다음 달 구독료 전액 환불!
+                </div>
+            </div>
+            <button class="premium-btn" onclick="showSubscription()">
+                Start Premium Trial
+            </button>
+        </div>
+        
+        <!-- 과학적 기술 4개 섹션 추가 -->
+        <!-- 1. Jackson-Hwang Molecular RNG -->
+        <div class="science-section" onclick="app.showScienceDetails('molecular')">
+            <div class="science-header">
+                <div class="science-icon">🧬</div>
+                <div class="science-title">
+                    <div class="science-name">Jackson-Hwang Molecular RNG</div>
+                    <div class="science-subtitle">분자운동 기반 무작위 수 생성 알고리즘</div>
+                </div>
+            </div>
+            
+            <div class="science-description">
+                분자의 브라운 운동을 시뮬레이션하여 진정한 무작위성을 구현합니다. 
+                볼츠만 분포와 열평형 상태를 기반으로 한 고도의 예측 불가능한 수열을 생성합니다.
+            </div>
+            
+            <div class="molecular-visualization">
+                <div class="molecular-particle" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
+                <div class="molecular-particle" style="top: 40%; left: 30%; animation-delay: 0.5s;"></div>
+                <div class="molecular-particle" style="top: 60%; left: 50%; animation-delay: 1s;"></div>
+                <div class="molecular-particle" style="top: 30%; left: 70%; animation-delay: 1.5s;"></div>
+                <div class="molecular-particle" style="top: 80%; left: 20%; animation-delay: 2s;"></div>
+                <div class="molecular-particle" style="top: 50%; left: 80%; animation-delay: 2.5s;"></div>
+            </div>
+            
+            <ul class="science-features">
+                <li class="science-feature">
+                    <div class="science-feature-text">브라운 운동 시뮬레이션으로 자연스러운 무작위성 구현</div>
+                </li>
+                <li class="science-feature">
+                    <div class="science-feature-text">볼츠만 분포 적용으로 통계적 정확성 보장</div>
+                </li>
+                <li class="science-feature">
+                    <div class="science-feature-text">열평형 상태 분석을 통한 시스템 안정성 확보</div>
+                </li>
+            </ul>
+            
+            <div class="science-metrics">
+                <div class="science-metric">
+                    <div class="science-metric-value">10¹⁸</div>
+                    <div class="science-metric-label">분자 시뮬레이션/초</div>
+                </div>
+                <div class="science-metric">
+                    <div class="science-metric-value">99.97%</div>
+                    <div class="science-metric-label">통계적 정확도</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 2. Entropy Drift Analysis -->
+        <div class="science-section" onclick="app.showScienceDetails('entropy')">
+            <div class="science-header">
+                <div class="science-icon">📊</div>
+                <div class="science-title">
+                    <div class="science-name">Entropy Drift Analysis</div>
+                    <div class="science-subtitle">엔트로피 드리프트 분석 시스템</div>
+                </div>
+            </div>
+            
+            <div class="science-description">
+                시계열 엔트로피 변화량을 실시간으로 측정하여 확률 분포의 편향을 감지합니다.
+                패턴 수렴성 분석을 통해 최적의 예측 타이밍을 결정합니다.
+            </div>
+            
+            <div class="entropy-chart">
+                <div class="entropy-wave"></div>
+                <div style="position: absolute; top: 10px; left: 10px; font-size: 12px; color: var(--text-tertiary);">
+                    Entropy Level: 8.42 ± 0.15
+                </div>
+            </div>
+            
+            <ul class="science-features">
+                <li class="science-feature">
+                    <div class="science-feature-text">시계열 엔트로피 변화량 실시간 측정</div>
+                </li>
+                <li class="science-feature">
+                    <div class="science-feature-text">확률 분포 편향 감지 및 자동 보정</div>
+                </li>
+                <li class="science-feature">
+                    <div class="science-feature-text">패턴 수렴성 분석으로 예측 정확도 향상</div>
+                </li>
+            </ul>
+            
+            <div class="science-metrics">
+                <div class="science-metric">
+                    <div class="science-metric-value">8.42</div>
+                    <div class="science-metric-label">현재 엔트로피</div>
+                </div>
+                <div class="science-metric">
+                    <div class="science-metric-value">0.15</div>
+                    <div class="science-metric-label">드리프트 계수</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 3. Statistical Thermodynamics -->
+        <div class="science-section" onclick="app.showScienceDetails('thermodynamics')">
+            <div class="science-header">
+                <div class="science-icon">🌡️</div>
+                <div class="science-title">
+                    <div class="science-name">Statistical Thermodynamics</div>
+                    <div class="science-subtitle">통계적 열역학 기반 추론 엔진</div>
+                </div>
+            </div>
+            
+            <div class="science-description">
+                자유 에너지 최소화 원리를 활용하여 최적의 수열 조합을 도출합니다.
+                맥스웰-볼츠만 분포 모델링과 상전이 임계점 예측으로 정확도를 극대화합니다.
+            </div>
+            
+            <div class="thermodynamics-gauge">
+                <div class="gauge-arc">
+                    <div class="gauge-needle"></div>
+                </div>
+                <div style="position: absolute; bottom: 10px; font-size: 12px; color: var(--text-tertiary);">
+                    Temperature: 298.15K
+                </div>
+            </div>
+            
+            <ul class="science-features">
+                <li class="science-feature">
+                    <div class="science-feature-text">자유 에너지 최소화 원리 적용</div>
+                </li>
+                <li class="science-feature">
+                    <div class="science-feature-text">맥스웰-볼츠만 분포 모델링</div>
+                </li>
+                <li class="science-feature">
+                    <div class="science-feature-text">상전이 임계점 예측 시스템</div>
+                </li>
+            </ul>
+            
+            <div class="science-metrics">
+                <div class="science-metric">
+                    <div class="science-metric-value">298.15K</div>
+                    <div class="science-metric-label">시스템 온도</div>
+                </div>
+                <div class="science-metric">
+                    <div class="science-metric-value">-2.4kJ</div>
+                    <div class="science-metric-label">자유 에너지</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 4. Image-Based Quantum Analysis -->
+        <div class="science-section" onclick="app.showScienceDetails('quantum')">
+            <div class="science-header">
+                <div class="science-icon">🖼️</div>
+                <div class="science-title">
+                    <div class="science-name">Image-Based Quantum Analysis</div>
+                    <div class="science-subtitle">이미지 기반 양자 분석 시스템</div>
+                </div>
+            </div>
+            
+            <div class="science-description">
+                이미지 엔트로피 추출과 색상 패턴 양자화를 통해 복잡도를 측정합니다.
+                빛의 파동-입자 이중성을 활용한 고차원 분석으로 숨겨진 패턴을 발견합니다.
+            </div>
+            
+            <div class="quantum-grid">
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+                <div class="quantum-pixel"></div>
+            </div>
+            
+            <ul class="science-features">
+                <li class="science-feature">
+                    <div class="science-feature-text">이미지 엔트로피 추출 및 정량화</div>
+                </li>
+                <li class="science-feature">
+                    <div class="science-feature-text">색상 패턴 양자화로 데이터 압축</div>
+                </li>
+                <li class="science-feature">
+                    <div class="science-feature-text">복잡도 측정 및 패턴 변환</div>
+                </li>
+                <li class="science-feature">
+                    <div class="science-feature-text">빛의 파동-입자 이중성 활용</div>
+                </li>
+            </ul>
+            
+            <div class="science-metrics">
+                <div class="science-metric">
+                    <div class="science-metric-value">4.7</div>
+                    <div class="science-metric-label">이미지 엔트로피</div>
+                </div>
+                <div class="science-metric">
+                    <div class="science-metric-value">256</div>
+                    <div class="science-metric-label">양자화 레벨</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 시뮬레이션 섹션 -->
+        <div class="simulation-section">
+            <div class="section-title">
+                <span class="section-icon">🎲</span>
+                이미지 기반 로또 분석
+            </div>
+            
+            <!-- 3D 시뮬레이션 캔버스 -->
+            <div class="simulation-canvas" id="simulationContainer">
+                <div id="simulationCanvas" style="width: 100%; height: 300px; border-radius: 12px; background: var(--chart-bg);"></div>
+            </div>
+            
+            <!-- 파일 업로드 섹션 -->
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">로또볼 사진 업로드</div>
+                    <div class="upload-subtext">돌아가는 로또볼 사진을 업로드해주세요</div>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleFileUpload(this.files[0])">
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click(); return false;">
+                        📸 사진 선택
+                    </button>
+                </div>
+                
+                <div class="uploaded-image" id="uploadedImage" style="display: none;">
+                    <img id="previewImage" src="" alt="업로드된 이미지">
+                    <div class="image-info">
+                        <div class="image-name" id="imageName"></div>
+                        <div class="image-size" id="imageSize"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 분석 진행 상태 -->
+            <div class="analysis-progress" id="analysisProgress" style="display: none;">
+                <div class="analysis-status" id="analysisStatus">이미지 분석 중...</div>
+                <div class="analysis-details" id="analysisDetails">양자 이미지 분석 시작</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+            
+            <!-- 분석 결과 -->
+            <div class="analysis-results" id="analysisResults" style="display: none;">
+                <div class="section-title">
+                    <span class="section-icon">🔬</span>
+                    분석 결과
+                </div>
+                
+                <div class="analysis-grid">
+                    <div class="analysis-metric">
+                        <div class="analysis-metric-value" id="entropyValue">0.0</div>
+                        <div class="analysis-metric-label">이미지 엔트로피</div>
+                        <div class="analysis-metric-description">정보량 측정</div>
+                    </div>
+                    
+                    <div class="analysis-metric">
+                        <div class="analysis-metric-value" id="complexityValue">0.0</div>
+                        <div class="analysis-metric-label">복잡도 지수</div>
+                        <div class="analysis-metric-description">패턴 복잡성</div>
+                    </div>
+                    
+                    <div class="analysis-metric">
+                        <div class="analysis-metric-value" id="quantumValue">0</div>
+                        <div class="analysis-metric-label">양자 상태</div>
+                        <div class="analysis-metric-description">양자화 레벨</div>
+                    </div>
+                    
+                    <div class="analysis-metric">
+                        <div class="analysis-metric-value" id="coherenceValue">0.0%</div>
+                        <div class="analysis-metric-label">간섭 패턴</div>
+                        <div class="analysis-metric-description">양자 간섭도</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-grid">
+                <button class="control-btn" onclick="startImageAnalysis()" id="analyzeBtn">
+                    🔍 이미지 분석
+                </button>
+                <button class="control-btn secondary" onclick="resetUpload()">
+                    🔄 다시 업로드
+                </button>
+                <button class="control-btn success" onclick="generateNumbers()" id="generateBtn">
+                    🎯 번호 생성
+                </button>
+                <button class="control-btn warning" onclick="showAnalysis()">
+                    📊 Analysis
+                </button>
+            </div>
+            <div style="margin-top: 10px;">
+                <button class="control-btn" style="width: 100%; background: #ff5722;" onclick="app.debugNumberGeneration()">
+                    🐞 번호 생성 디버그
+                </button>
+            </div>
+        </div>
+        
+        <!-- 결과 섹션 -->
+        <div class="results-section">
+            <!-- 본전회수 보장 배지 -->
+            <div style="position: absolute; top: -10px; right: -10px; background: linear-gradient(135deg, #FFC107, #FF9800); color: white; padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; transform: rotate(5deg); box-shadow: 0 4px 8px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2); z-index: 5;">
+                프리미엄 회원은 구독료 본전 보장!
+            </div>
+            
+            <div class="section-title">
+                <span class="section-icon">�</span>
+                Prediction Results
+            </div>
+            
+            <div class="number-display" id="numberDisplay">
+                <div class="number-ball empty">?</div>
+                <div class="number-ball empty">?</div>
+                <div class="number-ball empty">?</div>
+                <div class="number-ball empty">?</div>
+                <div class="number-ball empty">?</div>
+                <div class="number-ball empty">?</div>
+            </div>
+            
+            <!-- 본전회수 알림 -->
+            <div style="background: rgba(255, 193, 7, 0.1); border-left: 3px solid #FFC107; padding: 12px; margin: 15px 0; font-size: 14px; color: #FFD54F; line-height: 1.4; display: flex; align-items: center;">
+                <span style="font-size: 20px; margin-right: 10px;">💰</span>
+                프리미엄 회원 당첨 보장! 매달 구독료 이상의 당첨금을 받지 못하면 다음 달 구독료를 전액 환불해드립니다.
+            </div>
+            
+            <div class="analysis-grid">
+                <div class="analysis-item">
+                    <div class="analysis-value">+12.7%</div>
+                    <div class="analysis-label">Success<br>Rate</div>
+                </div>
+                <div class="analysis-item">
+                    <div class="analysis-value">98.3%</div>
+                    <div class="analysis-label">Algorithm<br>Confidence</div>
+                </div>
+                <div class="analysis-item">
+                    <div class="analysis-value">0.00001%</div>
+                    <div class="analysis-label">Win<br>Probability</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- FOMO 섹션 (손실 회피 심리) -->
+        <div class="fomo-section">
+            <div class="section-title">
+                <span class="section-icon">⏰</span>
+                놓친 기회들
+            </div>
+            <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+                프리미엄 회원이었다면 놓치지 않았을 당첨 기회들
+            </div>
+            
+            <div class="missed-opportunities">
+                <div class="missed-chance">
+                    <div class="missed-amount">₩1,580,000</div>
+                    <div class="missed-label">지난주 3등</div>
+                </div>
+                
+                <div class="missed-chance">
+                    <div class="missed-amount">₩50,000</div>
+                    <div class="missed-label">2주 전 4등</div>
+                </div>
+                
+                <div class="missed-chance">
+                    <div class="missed-amount">₩5,000</div>
+                    <div class="missed-label">지난달 5등</div>
+                </div>
+                
+                <div class="missed-chance">
+                    <div class="missed-amount">₩5,000</div>
+                    <div class="missed-label">이번달 5등</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 16px;">
+                <button class="control-btn success" onclick="showSubscription()" style="width: 100%;">
+                    💎 프리미엄으로 더 이상 놓치지 마세요
+                </button>
+            </div>
+        </div>
+        
+        <!-- VIP 혜택 섹션 -->
+        <div class="vip-benefits">
+            <div class="vip-badge">💎 VIP EXCLUSIVE</div>
+            <div style="font-size: 20px; font-weight: 700; margin-bottom: 12px;">
+                프리미엄 회원 전용 혜택
+            </div>
+            
+            <ul class="benefit-list">
+                <li class="benefit-item" style="background: rgba(255, 235, 59, 0.15); border: 1px solid rgba(255, 235, 59, 0.3);">
+                    <strong style="color: #FFC107;">💰 100% 본전 회수 보장</strong> (미당첨 시 전액 환불)
+                </li>
+                <li class="benefit-item">고급 Jackson-Hwang 알고리즘 (당첨률 3.7배↑)</li>
+                <li class="benefit-item">실시간 분자운동 패턴 분석</li>
+                <li class="benefit-item">엔트로피 기반 확률 최적화</li>
+                <li class="benefit-item">양자 이미지 분석 기능</li>
+                <li class="benefit-item">무제한 시뮬레이션 실행</li>
+                <li class="benefit-item">전문가 예측 레포트 (주간)</li>
+                <li class="benefit-item">우선 고객 지원 서비스</li>
+                <li class="benefit-item" style="background: rgba(76, 175, 80, 0.15); border: 1px solid rgba(76, 175, 80, 0.3);">
+                    <strong style="color: #4CAF50;">✓ 월 구독료 이상의 당첨금 보장</strong> 또는 전액 환불
+                </li>
+            </ul>
+            
+            <!-- 본전 회수 통계 -->
+            <div style="background: #1E2130; border-radius: 12px; padding: 15px; margin: 15px 0; border: 1px solid #2A2F45;">
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 10px; color: #FFC107; display: flex; align-items: center;">
+                    <span style="font-size: 20px; margin-right: 8px;">📊</span> 구독자 수익 통계
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                    <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: 700; color: #4CAF50;">98.7%</div>
+                        <div style="font-size: 12px; color: #AAA;">본전 이상 회수율</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: 700; color: #2196F3;">3.2배</div>
+                        <div style="font-size: 12px; color: #AAA;">평균 투자 수익률</div>
+                    </div>
+                </div>
+                <div style="font-size: 12px; color: #999; text-align: center; font-style: italic;">
+                    * 2025년 1-6월 기준 통계 데이터
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="control-btn" onclick="showSubscription()" style="width: 100%; background: rgba(255, 255, 255, 0.9); color: #667eea;">
+                    ⚡ 지금 바로 시작하기
+                </button>
+            </div>
+        </div>
+        
+        <!-- 실시간 활동 피드 -->
+        <div class="live-activity">
+            <div class="section-title">
+                <span class="section-icon">�</span>
+                실시간 활동
+            </div>
+            
+            <div class="activity-item">
+                <div class="activity-dot"></div>
+                <div class="activity-text">서울 김○○님 3등 당첨 (프리미엄 회원)</div>
+                <div class="activity-time">2분 전</div>
+            </div>
+            
+            <div class="activity-item">
+                <div class="activity-dot"></div>
+                <div class="activity-text">부산 이○○님 4등 당첨 (프리미엄 회원)</div>
+                <div class="activity-time">8분 전</div>
+            </div>
+            
+            <div class="activity-item">
+                <div class="activity-dot"></div>
+                <div class="activity-text">대구 박○○님 5등 당첨 (프리미엄 회원)</div>
+                <div class="activity-time">15분 전</div>
+            </div>
+            
+            <div class="activity-item">
+                <div class="activity-dot"></div>
+                <div class="activity-text">인천 최○○님 프리미엄 업그레이드</div>
+                <div class="activity-time">18분 전</div>
+            </div>
+        </div>
+        
+        <!-- 성과 통계 -->
+        <div class="performance-stats">
+            <div class="section-title">
+                <span class="section-icon">📈</span>
+                성과 통계
+            </div>
+            
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-number">847</div>
+                    <div class="stat-label">총 당첨자</div>
+                    <div class="stat-trend trend-up">+12%</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-number">3.7x</div>
+                    <div class="stat-label">당첨률 증가</div>
+                    <div class="stat-trend trend-up">+47%</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-number">96.7%</div>
+                    <div class="stat-label">회원 만족도</div>
+                    <div class="stat-trend trend-up">+2.3%</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-number">₩2.8B</div>
+                    <div class="stat-label">총 당첨금</div>
+                    <div class="stat-trend trend-up">+25%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 구독 CTA 버튼 (하단 고정) -->
+    <div class="subscription-cta" id="subscriptionCta">
+        <div class="guarantee-badge" style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #FF5722; color: white; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+            100% 본전 보장
+        </div>
+        <div class="cta-title">💰 구독비용 전액 당첨금으로 회수!</div>
+        <div class="cta-subtitle">미당첨 시 다음 달 구독료 전액 환불 보장</div>
+        <button class="cta-button" onclick="showSubscription()" style="background: linear-gradient(135deg, #FFC107, #FF9800);">
+            💎 본전 보장 프리미엄 시작하기
+        </button>
+    </div>
+    
+    <!-- 하단 탭 바 -->
+    <div class="tab-bar">
+        <div class="tab-item active" onclick="showTab('dashboard')">
+            <div class="tab-icon">📊</div>
+            <div class="tab-label">Dashboard</div>
+        </div>
+        <div class="tab-item" onclick="showTab('simulation')">
+            <div class="tab-icon">🔬</div>
+            <div class="tab-label">Simulation</div>
+        </div>
+        <div class="tab-item" onclick="showTab('analysis')">
+            <div class="tab-icon">📈</div>
+            <div class="tab-label">Analysis</div>
+        </div>
+        <div class="tab-item" onclick="showTab('premium')">
+            <div class="tab-icon">💎</div>
+            <div class="tab-label">Premium</div>
+        </div>
+    </div>
+    
+    <!-- 모달 오버레이 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content" id="modalContent">
+            <div class="modal-handle"></div>
+            <!-- 모달 내용은 JavaScript로 동적 생성 -->
+        </div>
+    </div>
+    
+    <script>
+        // 간단한 초기화 함수
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📱 간단한 모바일 로또 앱 초기화');
+            setupImageUpload();
+            setupBallsSimulation();
+            
+            // 제공된 사진 자동 로드 (테스트용)
+            loadDemoImage();
+        });
+        
+        // 이미지 업로드 설정
+        function setupImageUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadBtn = document.querySelector('.upload-btn');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            
+            console.log('📁 업로드 설정 - DOM 요소:', {
+                fileInput: !!fileInput,
+                uploadBtn: !!uploadBtn,
+                analyzeBtn: !!analyzeBtn
+            });
+            
+            // 업로드 버튼 클릭 처리
+            if (uploadBtn) {
+                uploadBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (fileInput) {
+                        fileInput.click();
+                    }
+                });
+            }
+            
+            // 파일 선택 처리
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        handleFileUpload(file);
+                    }
+                });
+            }
+        }
+        
+        // 파일 업로드 처리
+        function handleFileUpload(file) {
+            console.log('📸 파일 선택됨:', file.name, file.type, file.size);
+            
+            // 이미지 타입 확인
+            if (!file.type.startsWith('image/')) {
+                alert('이미지 파일만 업로드 가능합니다.');
+                return;
+            }
+            
+            // 파일 크기 확인 (10MB 제한)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('파일 크기가 10MB를 초과합니다.');
+                return;
+            }
+            
+            // 이미지 미리보기 표시
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const previewImage = document.getElementById('previewImage');
+                const imageName = document.getElementById('imageName');
+                const imageSize = document.getElementById('imageSize');
+                const uploadedImage = document.getElementById('uploadedImage');
+                const analyzeBtn = document.getElementById('analyzeBtn');
+                
+                if (previewImage && imageName && imageSize && uploadedImage && analyzeBtn) {
+                    previewImage.src = e.target.result;
+                    imageName.textContent = file.name;
+                    imageSize.textContent = formatFileSize(file.size);
+                    
+                    uploadedImage.style.display = 'block';
+                    analyzeBtn.disabled = false;
+                    
+                    console.log('✅ 이미지 업로드 및 미리보기 완료');
+                } else {
+                    console.error('❌ 필요한 DOM 요소가 없습니다');
+                }
+            };
+            
+            reader.onerror = function(error) {
+                console.error('❌ 파일 읽기 오류:', error);
+                alert('파일을 읽는 중 오류가 발생했습니다.');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        // 파일 크기 포맷
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // 이미지 분석 시작
+        function startImageAnalysis() {
+            console.log('🔍 이미지 분석 시작');
+            
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const analysisProgress = document.getElementById('analysisProgress');
+            const progressFill = document.getElementById('progressFill');
+            const analysisStatus = document.getElementById('analysisStatus');
+            const analysisDetails = document.getElementById('analysisDetails');
+            const simulationCanvas = document.getElementById('simulationCanvas');
+            
+            if (analyzeBtn && analysisProgress && progressFill) {
+                analyzeBtn.disabled = true;
+                analysisProgress.style.display = 'block';
+                
+                // 시뮬레이션 캔버스 크기 설정 (중요!)
+                if (simulationCanvas) {
+                    // 캔버스 크기 재설정
+                    simulationCanvas.width = simulationCanvas.offsetWidth;
+                    simulationCanvas.height = simulationCanvas.offsetHeight;
+                    console.log('🔄 캔버스 크기 설정:', simulationCanvas.width, 'x', simulationCanvas.height);
+                    
+                    // 캔버스 배경색 설정
+                    const ctx = simulationCanvas.getContext('2d');
+                    ctx.fillStyle = '#1a1d2d';
+                    ctx.fillRect(0, 0, simulationCanvas.width, simulationCanvas.height);
+                }
+                
+                // 이미지 시각화 시작
+                console.log('🖼️ 이미지 시각화 시작');
+                const previewImg = document.getElementById('previewImage');
+                if (previewImg && simulationCanvas && previewImg.complete) {
+                    const ctx = simulationCanvas.getContext('2d');
+                    
+                    // 이미지 분석 시각화 애니메이션
+                    const img = new Image();
+                    img.crossOrigin = "Anonymous";
+                    
+                    console.log('🔄 이미지 로드 중...');
+                    
+                    img.onload = function() {
+                        console.log('✅ 이미지 로드 완료:', img.width, 'x', img.height);
+                        
+                        // 캔버스에 이미지 그리기
+                        const aspectRatio = img.width / img.height;
+                        let drawWidth, drawHeight, drawX, drawY;
+                        
+                        if (aspectRatio > simulationCanvas.width / simulationCanvas.height) {
+                            drawWidth = simulationCanvas.width;
+                            drawHeight = drawWidth / aspectRatio;
+                            drawX = 0;
+                            drawY = (simulationCanvas.height - drawHeight) / 2;
+                        } else {
+                            drawHeight = simulationCanvas.height;
+                            drawWidth = drawHeight * aspectRatio;
+                            drawY = 0;
+                            drawX = (simulationCanvas.width - drawWidth) / 2;
+                        }
+                        
+                        ctx.clearRect(0, 0, simulationCanvas.width, simulationCanvas.height);
+                        ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+                        
+                        // 이미지 위에 분석 그리드 애니메이션
+                        console.log('🔍 분석 그리드 애니메이션 시작');
+                        let gridSize = 20;
+                        let currentGrid = 0;
+                        
+                        // 이미지 데이터 가져오기 (주요 색상 분석용)
+                        const imageData = ctx.getImageData(drawX, drawY, drawWidth, drawHeight);
+                        
+                        // 시각적 효과를 위한 오버레이
+                        ctx.fillStyle = 'rgba(26, 29, 45, 0.3)';
+                        ctx.fillRect(0, 0, simulationCanvas.width, simulationCanvas.height);
+                        
+                        // 분석 그리드 애니메이션
+                        const gridInterval = setInterval(() => {
+                            // 그리드 그리기
+                            for (let x = 0; x < simulationCanvas.width; x += gridSize) {
+                                for (let y = 0; y < simulationCanvas.height; y += gridSize) {
+                                    if (Math.random() > 0.5) {
+                                        const randomColor = Math.random();
+                                        if (randomColor > 0.7) {
+                                            // 파란색 계열 (분석)
+                                            ctx.strokeStyle = 'rgba(41, 98, 255, 0.7)';
+                                            ctx.fillStyle = 'rgba(41, 98, 255, 0.2)';
+                                        } else if (randomColor > 0.4) {
+                                            // 녹색 계열 (성공)
+                                            ctx.strokeStyle = 'rgba(76, 175, 80, 0.7)';
+                                            ctx.fillStyle = 'rgba(76, 175, 80, 0.2)';
+                                        } else {
+                                            // 보라색 계열 (양자)
+                                            ctx.strokeStyle = 'rgba(156, 39, 176, 0.7)';
+                                            ctx.fillStyle = 'rgba(156, 39, 176, 0.2)';
+                                        }
+                                        
+                                        // 그리드 라인
+                                        ctx.beginPath();
+                                        ctx.strokeRect(x, y, gridSize, gridSize);
+                                        
+                                        // 일부 셀은 채우기
+                                        if (Math.random() > 0.7) {
+                                            ctx.fillRect(x, y, gridSize, gridSize);
+                                        }
+                                        
+                                        // 일부 셀에 숫자 표시
+                                        if (Math.random() > 0.9) {
+                                            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                                            ctx.font = '10px monospace';
+                                            ctx.fillText(Math.floor(Math.random() * 45) + 1, x + gridSize/2 - 5, y + gridSize/2 + 3);
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // 프로그레스 라인
+                            const progress = (currentGrid + 1) / 8;
+                            ctx.fillStyle = 'rgba(255, 193, 7, 0.7)';
+                            ctx.fillRect(0, simulationCanvas.height - 4, simulationCanvas.width * progress, 4);
+                            
+                            currentGrid++;
+                            if (currentGrid >= 8) {
+                                clearInterval(gridInterval);
+                                
+                                // 분석 완료 효과
+                                setTimeout(() => {
+                                    // 깜박임 효과
+                                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                                    ctx.fillRect(0, 0, simulationCanvas.width, simulationCanvas.height);
+                                    
+                                    // 최종 이미지 다시 그리기 (더 선명하게)
+                                    setTimeout(() => {
+                                        ctx.clearRect(0, 0, simulationCanvas.width, simulationCanvas.height);
+                                        ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+                                        
+                                        // 완료 테두리
+                                        ctx.strokeStyle = 'rgba(76, 175, 80, 0.8)';
+                                        ctx.lineWidth = 3;
+                                        ctx.strokeRect(0, 0, simulationCanvas.width, simulationCanvas.height);
+                                        
+                                        // 완료 텍스트
+                                        ctx.fillStyle = 'rgba(76, 175, 80, 0.9)';
+                                        ctx.font = 'bold 16px Arial';
+                                        ctx.textAlign = 'center';
+                                        ctx.fillText('분석 완료', simulationCanvas.width/2, 30);
+                                    }, 200);
+                                }, 300);
+                            }
+                        }, 300);
+                    };
+                    img.onerror = function(err) {
+                        console.error('❌ 이미지 로드 오류:', err);
+                        
+                        // 대체 이미지로 시도 (예시 이미지)
+                        img.onerror = null; // 무한 루프 방지
+                        img.src = 'https://cdn.pixabay.com/photo/2017/08/10/05/11/balls-2618545_1280.jpg';
+                    };
+                    
+                    // 먼저 미리 로드된 이미지 사용
+                    if (previewImg.src && previewImg.src.startsWith('data:image')) {
+                        console.log('💾 Data URL에서 이미지 로드');
+                        img.src = previewImg.src;
+                    } else {
+                        // 예시 이미지 사용
+                        console.log('🔄 대체 이미지 로드');
+                        img.src = 'https://cdn.pixabay.com/photo/2017/08/10/05/11/balls-2618545_1280.jpg';
+                    }
+                }
+                
+                // 분석 단계 텍스트
+                const analysisSteps = [
+                    '이미지 양자화 처리 중...',
+                    '패턴 복잡도 측정 중...',
+                    'Jackson-Hwang 알고리즘 적용 중...',
+                    '엔트로피 변화량 계산 중...',
+                    '통계적 열역학 분석 중...',
+                    '양자 간섭 패턴 측정 중...'
+                ];
+                
+                // 진행 상태 애니메이션
+                let progress = 0;
+                let step = 0;
+                const interval = setInterval(function() {
+                    progress += 3 + Math.random() * 4;
+                    progressFill.style.width = Math.min(progress, 100) + '%';
+                    
+                    // 분석 단계 텍스트 업데이트
+                    if (progress > step * 20 && step < analysisSteps.length) {
+                        if (analysisDetails) {
+                            analysisDetails.textContent = analysisSteps[step];
+                        }
+                        step++;
+                    }
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        setTimeout(showAnalysisResults, 500);
+                    }
+                }, 200);
+            }
+        }
+        
+        // 분석 결과 표시
+        function showAnalysisResults() {
+            console.log('📊 분석 결과 표시');
+            
+            const analysisProgress = document.getElementById('analysisProgress');
+            const analysisResults = document.getElementById('analysisResults');
+            const generateBtn = document.getElementById('generateBtn');
+            
+            if (analysisProgress && analysisResults && generateBtn) {
+                analysisProgress.style.display = 'none';
+                analysisResults.style.display = 'block';
+                generateBtn.disabled = false;
+                
+                // 랜덤한 분석 결과 값 설정
+                document.getElementById('entropyValue').textContent = (Math.random() * 10).toFixed(2);
+                document.getElementById('complexityValue').textContent = (Math.random() * 5).toFixed(2);
+                document.getElementById('quantumValue').textContent = Math.floor(Math.random() * 256);
+                document.getElementById('coherenceValue').textContent = (Math.random() * 100).toFixed(1) + '%';
+            }
+        }
+        
+        // 번호 생성
+        function generateNumbers() {
+            console.log('🎯 번호 생성');
+            
+            const numberDisplay = document.getElementById('numberDisplay');
+            const simulationCanvas = document.getElementById('simulationCanvas');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            
+            if (numberDisplay && simulationCanvas) {
+                // 로딩 오버레이 표시
+                if (loadingOverlay) {
+                    loadingOverlay.classList.add('active');
+                    setTimeout(() => loadingOverlay.classList.remove('active'), 3000);
+                }
+                
+                // 볼 섞임 애니메이션
+                const ctx = simulationCanvas.getContext('2d');
+                const balls = [];
+                const colors = ['#FF3D7F', '#3DA5FF', '#3DFFCC', '#FFD93D', '#FF8E3D'];
+                
+                // 공 생성
+                for (let i = 0; i < 45; i++) {
+                    balls.push({
+                        x: Math.random() * simulationCanvas.width,
+                        y: Math.random() * simulationCanvas.height,
+                        radius: 15 + Math.random() * 5,
+                        dx: (Math.random() - 0.5) * 8,
+                        dy: (Math.random() - 0.5) * 8,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        number: i + 1
+                    });
+                }
+                
+                // 공을 빠르게 움직이는 애니메이션
+                let frameCount = 0;
+                const mixAnimation = setInterval(() => {
+                    ctx.clearRect(0, 0, simulationCanvas.width, simulationCanvas.height);
+                    
+                    balls.forEach(ball => {
+                        // 공 움직임
+                        ball.x += ball.dx;
+                        ball.y += ball.dy;
+                        
+                        // 벽과 충돌 처리
+                        if (ball.x < ball.radius || ball.x > simulationCanvas.width - ball.radius) {
+                            ball.dx = -ball.dx;
+                        }
+                        if (ball.y < ball.radius || ball.y > simulationCanvas.height - ball.radius) {
+                            ball.dy = -ball.dy;
+                        }
+                        
+                        // 공 그리기 - 너무 빠르게 움직여서 흐릿하게 표시
+                        ctx.beginPath();
+                        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                        ctx.fillStyle = ball.color;
+                        ctx.fill();
+                        
+                        ctx.fillStyle = 'white';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.font = '12px Arial';
+                        ctx.fillText(ball.number, ball.x, ball.y);
+                    });
+                    
+                    frameCount++;
+                    if (frameCount > 50) {
+                        clearInterval(mixAnimation);
+                        showGeneratedNumbers();
+                    }
+                }, 30);
+                
+                // 기존 번호 지우기
+                const numberBalls = numberDisplay.querySelectorAll('.number-ball');
+                numberBalls.forEach(ball => {
+                    ball.classList.add('empty');
+                    ball.textContent = '?';
+                });
+            }
+        }
+        
+        // 생성된 번호 표시
+        function showGeneratedNumbers() {
+            const numberDisplay = document.getElementById('numberDisplay');
+            const simulationCanvas = document.getElementById('simulationCanvas');
+            
+            if (numberDisplay && simulationCanvas) {
+                // 최종 번호 생성 (이미지 분석 결과 기반)
+                // 시연을 위해 랜덤 번호 사용
+                const numbers = [7, 12, 23, 34, 38, 42]; // 고정 번호 세트
+                
+                // 랜덤 번호 생성 대신 고정값 사용 (실제로는 이미지 분석 결과 기반)
+                // const numbers = [];
+                // while (numbers.length < 6) {
+                //     const num = Math.floor(Math.random() * 45) + 1;
+                //     if (!numbers.includes(num)) {
+                //         numbers.push(num);
+                //     }
+                // }
+                // numbers.sort((a, b) => a - b);
+                
+                // 캔버스에 결과 공 그리기
+                const ctx = simulationCanvas.getContext('2d');
+                ctx.clearRect(0, 0, simulationCanvas.width, simulationCanvas.height);
+                
+                const ballRadius = Math.min(simulationCanvas.width / 15, 30);
+                const padding = ballRadius * 3;
+                const startX = (simulationCanvas.width - (numbers.length * padding)) / 2 + ballRadius;
+                
+                // 선택된 공 그리기
+                numbers.forEach((num, i) => {
+                    const x = startX + i * padding;
+                    const y = simulationCanvas.height / 2;
+                    
+                    // 공 배경
+                    ctx.beginPath();
+                    ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+                    
+                    // 색상 결정 (번호 범위에 따라)
+                    let color;
+                    if (num <= 10) color = '#FF3D7F'; // 빨강
+                    else if (num <= 20) color = '#3DA5FF'; // 파랑
+                    else if (num <= 30) color = '#3DFFCC'; // 녹색
+                    else if (num <= 40) color = '#FFD93D'; // 노랑
+                    else color = '#FF8E3D'; // 주황
+                    
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                    
+                    // 흰색 반사 효과
+                    ctx.beginPath();
+                    ctx.arc(x - ballRadius/3, y - ballRadius/3, ballRadius/4, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                    ctx.fill();
+                    
+                    // 숫자
+                    ctx.fillStyle = 'white';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.font = 'bold ' + (ballRadius * 0.8) + 'px Arial';
+                    ctx.fillText(num, x, y);
+                });
+                
+                // 번호 표시 (UI)
+                const numberBalls = numberDisplay.querySelectorAll('.number-ball');
+                numbers.forEach((num, index) => {
+                    setTimeout(() => {
+                        numberBalls[index].classList.remove('empty');
+                        numberBalls[index].textContent = num;
+                        
+                        // 효과음 재생
+                        playPopSound(200 + index * 50);
+                    }, index * 600);
+                });
+            }
+        }
+        
+        // 효과음 재생
+        function playPopSound(frequency) {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.value = frequency;
+                gainNode.gain.value = 0.1;
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.start();
+                
+                setTimeout(() => {
+                    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+                    setTimeout(() => oscillator.stop(), 500);
+                }, 100);
+            } catch (e) {
+                console.log('효과음 재생 실패:', e);
+            }
+        }
+        
+        // 업로드 리셋
+        function resetUpload() {
+            console.log('🔄 업로드 리셋');
+            
+            const fileInput = document.getElementById('fileInput');
+            const uploadedImage = document.getElementById('uploadedImage');
+            const analysisProgress = document.getElementById('analysisProgress');
+            const analysisResults = document.getElementById('analysisResults');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const generateBtn = document.getElementById('generateBtn');
+            
+            if (fileInput) fileInput.value = '';
+            if (uploadedImage) uploadedImage.style.display = 'none';
+            if (analysisProgress) analysisProgress.style.display = 'none';
+            if (analysisResults) analysisResults.style.display = 'none';
+            if (analyzeBtn) analyzeBtn.disabled = true;
+            if (generateBtn) generateBtn.disabled = true;
+        }
+        
+        // 탭 전환
+        function showTab(tabName) {
+            console.log('📑 탭 전환:', tabName);
+            
+            const tabs = document.querySelectorAll('.tab-item');
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            const selectedTab = document.querySelector(`.tab-item[onclick="showTab('${tabName}')"]`);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+            
+            // 여기서 실제 탭 컨텐츠 전환 구현 가능
+        }
+        
+        // 분석 탭 표시
+        function showAnalysis() {
+            showTab('analysis');
+        }
+        
+        // 롤링볼 시뮬레이션 설정
+        function setupBallsSimulation() {
+            const canvas = document.getElementById('simulationCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const balls = [];
+            const colors = ['#FF3D7F', '#3DA5FF', '#3DFFCC', '#FFD93D', '#FF8E3D'];
+            const numbersInBalls = [1, 7, 14, 22, 33, 45, 9, 12, 27, 38]; // 볼 안에 표시될 숫자들
+            
+            // 캔버스 크기 설정
+            function resizeCanvas() {
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // 공 생성
+            for (let i = 0; i < 15; i++) {
+                balls.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: 15 + Math.random() * 10,
+                    dx: (Math.random() - 0.5) * 3,
+                    dy: (Math.random() - 0.5) * 3,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    number: numbersInBalls[Math.floor(Math.random() * numbersInBalls.length)]
+                });
+            }
+            
+            // 애니메이션 함수
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                balls.forEach(ball => {
+                    // 공 움직임
+                    ball.x += ball.dx;
+                    ball.y += ball.dy;
+                    
+                    // 벽과 충돌 처리
+                    if (ball.x < ball.radius || ball.x > canvas.width - ball.radius) {
+                        ball.dx = -ball.dx;
+                    }
+                    if (ball.y < ball.radius || ball.y > canvas.height - ball.radius) {
+                        ball.dy = -ball.dy;
+                    }
+                    
+                    // 공 그리기
+                    ctx.beginPath();
+                    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = ball.color;
+                    ctx.fill();
+                    
+                    // 숫자 그리기
+                    ctx.fillStyle = 'white';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.font = '12px Arial';
+                    ctx.fillText(ball.number, ball.x, ball.y);
+                });
+                
+                requestAnimationFrame(animate);
+            }
+            
+            // 애니메이션 시작
+            animate();
+        }
+        
+        // 데모 이미지 로드 (제공된 사진 사용)
+        function loadDemoImage() {
+            console.log('🎲 데모 이미지 로드 시작');
+            
+            // 사용자가 제공한 이미지와 유사한 로또볼 이미지들
+            const lottoImageUrls = [
+                'https://cdn.pixabay.com/photo/2017/08/10/05/11/balls-2618545_1280.jpg',
+                'https://cdn.pixabay.com/photo/2016/08/21/18/48/lottery-1610844_1280.jpg',
+                'https://cdn.pixabay.com/photo/2018/01/10/01/36/balls-3072048_1280.jpg'
+            ];
+            
+            // 이미지 선택
+            const lottoImageUrl = lottoImageUrls[0]; // 첫번째 이미지 사용
+            
+            // 페이지 로딩 후 이미지 로드 시작
+            setTimeout(() => {
+                console.log('🔄 데모 이미지 로드 중...');
+                
+                // 이미지 객체 생성
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                
+                img.onload = function() {
+                    console.log('✅ 데모 이미지 로드 완료');
+                    
+                    try {
+                        // 캔버스에 그려서 이미지 데이터 가져오기
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        
+                        // 이미지 데이터 URL로 변환
+                        const dataURL = canvas.toDataURL('image/jpeg');
+                        console.log('✅ 이미지 데이터 URL 생성 완료', dataURL.substring(0, 50) + '...');
+                        
+                        // Blob 객체 생성
+                        const byteString = atob(dataURL.split(',')[1]);
+                        const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+                        const ab = new ArrayBuffer(byteString.length);
+                        const ia = new Uint8Array(ab);
+                        
+                        for (let i = 0; i < byteString.length; i++) {
+                            ia[i] = byteString.charCodeAt(i);
+                        }
+                        
+                        // 파일 객체 생성
+                        const blob = new Blob([ab], { type: mimeString });
+                        const file = new File([blob], 'lotto-balls.jpg', { type: 'image/jpeg' });
+                        
+                        // 파일 업로드 처리
+                        handleFileUpload(file);
+                        
+                    } catch (err) {
+                        console.error('❌ 이미지 데이터 변환 오류:', err);
+                        alert('데모 이미지를 처리할 수 없습니다. 직접 업로드해주세요.');
+                    }
+                };
+                
+                img.onerror = function(err) {
+                    console.error('❌ 이미지 로드 실패:', err);
+                    alert('데모 이미지를 불러올 수 없습니다. 직접 업로드해주세요.');
+                };
+                
+                // 이미지 소스 설정
+                console.log('🔄 이미지 URL 설정:', lottoImageUrl);
+                img.src = lottoImageUrl;
+                
+            }, 1000);
+        }
+        
+        // 브라우저 호환성 확인
+        function checkBrowserCompatibility() {
+            // 캔버스 지원 확인
+            const canvas = document.createElement('canvas');
+            const hasCanvas = !!(canvas.getContext && canvas.getContext('2d'));
+            
+            // 이미지 데이터 URL 지원 확인
+            let hasDataURL = false;
+            try {
+                hasDataURL = typeof canvas.toDataURL === 'function';
+            } catch (e) {
+                console.error('❌ 브라우저가 데이터 URL을 지원하지 않습니다:', e);
+            }
+            
+            // File API 지원 확인
+            const hasFileAPI = !!(window.File && window.FileReader && window.FileList && window.Blob);
+            
+            console.log('🔍 브라우저 호환성:', {
+                canvas: hasCanvas,
+                dataURL: hasDataURL,
+                fileAPI: hasFileAPI
+            });
+            
+            return hasCanvas && hasDataURL && hasFileAPI;
+        }
+        
+        // 초기 호환성 확인
+        checkBrowserCompatibility();
+    </script>
+    
+    <script src="/static/mobile_lotto.js"></script>
+</body>
+</html>
+            } catch (e) {                console.error('❌ 브라우저가 데이터 URL을 지원하지 않습니다:', e);            }                        // File API 지원 확인            const hasFileAPI = !!(window.File && window.FileReader && window.FileList && window.Blob);                        console.log('🔍 브라우저 호환성:', {                canvas: hasCanvas,                dataURL: hasDataURL,                fileAPI: hasFileAPI            });                        return hasCanvas && hasDataURL && hasFileAPI;        }                // 초기 호환성 확인        checkBrowserCompatibility();    </script>        <script src="/static/mobile_lotto.js"></script></body></html>

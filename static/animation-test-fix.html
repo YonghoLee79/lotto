@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>로또 3D 애니메이션 테스트 (수정됨)</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            background: #0d1421;
+            color: #ffffff;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .animation-container {
+            width: 100%;
+            height: 400px;
+            background: #131722;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: #2962ff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background: #1c54e9;
+        }
+        
+        button:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1a1f2e;
+            border-radius: 12px;
+            font-family: 'SF Mono', monospace;
+            font-size: 18px;
+            text-align: center;
+        }
+        
+        .ball-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .number-ball {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-family: 'SF Mono', monospace;
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #2962ff;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #uploadContainer {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #444;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        #uploadBtn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #333;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        
+        #previewImage {
+            max-width: 100%;
+            max-height: 200px;
+            margin-top: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        #debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background: #1a1f2e;
+            border-radius: 8px;
+            font-family: 'SF Mono', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>로또 3D 애니메이션 테스트 (수정됨)</h1>
+        
+        <div id="uploadContainer">
+            <label id="uploadBtn" for="fileInput">로또볼 이미지 업로드</label>
+            <input type="file" id="fileInput" accept="image/*">
+            <div id="imageInfo"></div>
+            <img id="previewImage" src="" alt="업로드 이미지 미리보기">
+        </div>
+        
+        <div class="animation-container" id="animationContainer"></div>
+        
+        <div class="controls">
+            <button id="startBtn" disabled>애니메이션 시작</button>
+            <button id="resetBtn" disabled>초기화</button>
+            <button id="testBtn">테스트 이미지 로드</button>
+        </div>
+        
+        <div class="result" id="result">
+            <div>선택된 번호:</div>
+            <div class="ball-container" id="ballContainer"></div>
+        </div>
+        
+        <div id="debug-info"></div>
+    </div>
+    
+    <!-- Three.js 라이브러리 (먼저 로드) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r146/three.min.js"></script>
+    
+    <script>
+    // Three.js 로딩 확인
+    document.getElementById('debug-info').textContent = 'THREE 객체 상태: ' + 
+        (window.THREE ? 'LOADED ✅ (버전: ' + THREE.REVISION + ')' : 'NOT LOADED ❌');
+    </script>
+    
+    <!-- 애니메이션 스크립트 -->
+    <script src="/static/js/ball-animation.js"></script>
+    
+    <script>
+        // 디버그 로그 함수
+        function debugLog(message) {
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.textContent += '\n' + message;
+            debugInfo.scrollTop = debugInfo.scrollHeight;
+            console.log(message);
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            debugLog('DOM 로드 완료');
+            
+            // 요소들 가져오기
+            const fileInput = document.getElementById('fileInput');
+            const previewImage = document.getElementById('previewImage');
+            const imageInfo = document.getElementById('imageInfo');
+            const startBtn = document.getElementById('startBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const testBtn = document.getElementById('testBtn');
+            const ballContainer = document.getElementById('ballContainer');
+            
+            debugLog('DOM 요소 참조 완료');
+            
+            // THREE 확인
+            if (!window.THREE) {
+                debugLog('ERROR: Three.js가 로드되지 않았습니다!');
+                return;
+            }
+            
+            // BallAnimationManager 확인
+            if (!window.BallAnimationManager) {
+                debugLog('ERROR: BallAnimationManager가 로드되지 않았습니다!');
+                return;
+            }
+            
+            // 애니메이션 매니저 인스턴스 생성
+            debugLog('BallAnimationManager 인스턴스 생성 시도...');
+            try {
+                const ballAnimationManager = new BallAnimationManager();
+                debugLog('BallAnimationManager 인스턴스 생성 성공');
+                
+                const initSuccess = ballAnimationManager.init('animationContainer');
+                debugLog('초기화 결과: ' + (initSuccess ? '성공 ✅' : '실패 ❌'));
+                
+                // 테스트 이미지 로드 버튼
+                testBtn.addEventListener('click', () => {
+                    debugLog('테스트 이미지 로드 버튼 클릭');
+                    // 테스트 이미지 URL (기본 로또 이미지)
+                    const testImageUrl = 'https://img.sportsworldi.com/content/image/2020/07/20/20200720511893.jpg';
+                    
+                    // 이미지 로드
+                    previewImage.src = testImageUrl;
+                    previewImage.style.display = 'block';
+                    imageInfo.textContent = '테스트 이미지 로드됨';
+                    startBtn.disabled = false;
+                    debugLog('테스트 이미지 로드 완료');
+                });
+                
+                // 파일 업로드 이벤트
+                fileInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    debugLog('파일 업로드: ' + file.name);
+                    
+                    // 파일 정보 표시
+                    imageInfo.textContent = `${file.name} (${Math.round(file.size / 1024)}KB)`;
+                    
+                    // 이미지 미리보기
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        previewImage.src = e.target.result;
+                        previewImage.style.display = 'block';
+                        startBtn.disabled = false;
+                        debugLog('파일 미리보기 완료');
+                    };
+                    reader.readAsDataURL(file);
+                });
+                
+                // 애니메이션 시작 버튼
+                startBtn.addEventListener('click', () => {
+                    debugLog('애니메이션 시작 버튼 클릭');
+                    if (!previewImage.src) {
+                        alert('먼저 이미지를 업로드해주세요.');
+                        return;
+                    }
+                    
+                    // 시작 버튼 비활성화
+                    startBtn.disabled = true;
+                    
+                    // 애니메이션 시작
+                    debugLog('processUserImage 호출...');
+                    ballAnimationManager.processUserImage(previewImage.src, (success) => {
+                        debugLog('애니메이션 콜백 실행: ' + (success ? '성공' : '실패'));
+                        if (success) {
+                            resetBtn.disabled = false;
+                            
+                            // 타이머 설정 (애니메이션 완료 예상 시간 후)
+                            debugLog('애니메이션 완료 대기 중 (12초)...');
+                            setTimeout(() => {
+                                // 번호 표시
+                                const numbers = ballAnimationManager.selectedNumbers;
+                                debugLog('애니메이션 완료, 번호: ' + (numbers ? numbers.join(', ') : '없음'));
+                                displayNumbers(numbers);
+                            }, 12000);
+                        } else {
+                            alert('애니메이션 처리에 실패했습니다.');
+                            debugLog('ERROR: 애니메이션 처리 실패');
+                            startBtn.disabled = false;
+                        }
+                    });
+                });
+                
+                // 초기화 버튼
+                resetBtn.addEventListener('click', () => {
+                    debugLog('초기화 버튼 클릭');
+                    ballAnimationManager.reset();
+                    ballContainer.innerHTML = '';
+                    startBtn.disabled = false;
+                    resetBtn.disabled = true;
+                    debugLog('애니메이션 초기화 완료');
+                });
+                
+                // 번호 표시 함수
+                function displayNumbers(numbers) {
+                    if (!numbers || numbers.length !== 6) {
+                        debugLog('ERROR: 유효하지 않은 번호 배열: ' + JSON.stringify(numbers));
+                        return;
+                    }
+                    
+                    ballContainer.innerHTML = '';
+                    
+                    numbers.forEach(num => {
+                        const ball = document.createElement('div');
+                        ball.className = 'number-ball';
+                        ball.textContent = num;
+                        
+                        // 번호 범위에 따라 색상 설정
+                        let color;
+                        if (num <= 10) color = '#FF3D7F'; // 빨강
+                        else if (num <= 20) color = '#3DA5FF'; // 파랑
+                        else if (num <= 30) color = '#3DFFCC'; // 녹색
+                        else if (num <= 40) color = '#FFD93D'; // 노랑
+                        else color = '#FF8E3D'; // 주황
+                        
+                        ball.style.backgroundColor = color;
+                        ballContainer.appendChild(ball);
+                    });
+                    
+                    debugLog('번호 표시 완료');
+                }
+                
+            } catch (error) {
+                debugLog('ERROR: BallAnimationManager 초기화 중 오류 발생: ' + error.message);
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>

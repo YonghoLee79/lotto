@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>로또 3D 애니메이션 테스트</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            background: #0d1421;
+            color: #ffffff;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .animation-container {
+            width: 100%;
+            height: 400px;
+            background: #131722;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: #2962ff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background: #1c54e9;
+        }
+        
+        button:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1a1f2e;
+            border-radius: 12px;
+            font-family: 'SF Mono', monospace;
+            font-size: 18px;
+            text-align: center;
+        }
+        
+        .ball-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .number-ball {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-family: 'SF Mono', monospace;
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #2962ff;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #uploadContainer {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #444;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        #uploadBtn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #333;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        
+        #previewImage {
+            max-width: 100%;
+            max-height: 200px;
+            margin-top: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>로또 3D 애니메이션 테스트</h1>
+        
+        <div id="uploadContainer">
+            <label id="uploadBtn" for="fileInput">로또볼 이미지 업로드</label>
+            <input type="file" id="fileInput" accept="image/*">
+            <div id="imageInfo"></div>
+            <img id="previewImage" src="" alt="업로드 이미지 미리보기">
+        </div>
+        
+        <div class="animation-container" id="animationContainer"></div>
+        
+        <div class="controls">
+            <button id="startBtn" disabled>애니메이션 시작</button>
+            <button id="resetBtn" disabled>초기화</button>
+            <button id="testBtn">테스트 이미지 로드</button>
+            <button id="lottoSimBtn" disabled>🎲 실제 로또 시뮬레이션</button>
+        </div>
+        
+        <div class="controls">
+            <button id="soundToggleBtn" style="background: #28a745;">🔊 사운드 ON</button>
+            <button id="slowModeBtn">🐌 슬로우 모션</button>
+            <button id="cameraBtn">📷 카메라 모드</button>
+            <button id="effectsBtn" style="background: #ff6b35;">✨ 특수 효과</button>
+        </div>
+        
+        <div class="controls" style="flex-direction: column; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <label style="color: #333; font-weight: 500;">🔊 마스터 볼륨:</label>
+                <input type="range" id="volumeSlider" min="0" max="100" value="50" 
+                       style="flex: 1; height: 6px; background: linear-gradient(to right, #2962ff, #42a5f5); 
+                              border-radius: 3px; outline: none; cursor: pointer;">
+                <span id="volumeValue" style="min-width: 30px; text-align: center; font-weight: bold;">50</span>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="ambientToggleBtn" style="background: #6c757d; font-size: 12px; padding: 5px 10px;">🌀 환경음</button>
+                <button id="reverbToggleBtn" style="background: #17a2b8; font-size: 12px; padding: 5px 10px;">🏛️ 리버브</button>
+                <button id="testSoundBtn" style="background: #ffc107; font-size: 12px; padding: 5px 10px;">🎵 테스트</button>
+            </div>
+        </div>
+        
+        <div class="result" id="result">
+            <div>선택된 번호:</div>
+            <div class="ball-container" id="ballContainer"></div>
+            <div id="animationStatus" style="margin-top: 15px; font-size: 14px; color: #888; text-align: center;">
+                애니메이션 상태: 대기 중
+            </div>
+        </div>
+    </div>
+    
+    <!-- Three.js 라이브러리 (로컬 버전) -->
+    <script src="/static/js/three.min.js"></script>
+    <!-- 로드 실패시 CDN 버전 대체 로드 -->
+    <script>
+        // Three.js 로딩 상태 확인 및 대체 로딩 메커니즘
+        (function() {
+            // THREE 객체가 있는지 확인
+            if (typeof THREE === 'undefined') {
+                console.warn('로컬 Three.js 로드 실패, CDN 버전으로 시도합니다.');
+                
+                // 먼저 상태 메시지 표시
+                const statusDiv = document.createElement('div');
+                statusDiv.id = 'three-status';
+                statusDiv.style.position = 'fixed';
+                statusDiv.style.bottom = '10px';
+                statusDiv.style.right = '10px';
+                statusDiv.style.background = 'rgba(0,0,0,0.7)';
+                statusDiv.style.color = '#ff9900';
+                statusDiv.style.padding = '8px 12px';
+                statusDiv.style.borderRadius = '4px';
+                statusDiv.style.fontSize = '14px';
+                statusDiv.style.zIndex = '1000';
+                statusDiv.textContent = 'Three.js 로딩 중...';
+                document.body.appendChild(statusDiv);
+                
+                // CDN 목록 (순차적으로 시도)
+                const cdnUrls = [
+                    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r146/three.min.js',
+                    'https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js',
+                    'https://unpkg.com/three@0.146.0/build/three.min.js'
+                ];
+                
+                // CDN으로부터 순차적으로 로드 시도
+                let currentCdnIndex = 0;
+                
+                function loadFromNextCdn() {
+                    if (currentCdnIndex >= cdnUrls.length) {
+                        // 모든 CDN 시도 실패
+                        statusDiv.textContent = 'Three.js 로드 실패!';
+                        statusDiv.style.color = 'red';
+                        
+                        // 오류 메시지 표시
+                        const errorDiv = document.createElement('div');
+                        errorDiv.style.position = 'fixed';
+                        errorDiv.style.top = '50%';
+                        errorDiv.style.left = '50%';
+                        errorDiv.style.transform = 'translate(-50%, -50%)';
+                        errorDiv.style.background = 'rgba(0,0,0,0.8)';
+                        errorDiv.style.color = 'white';
+                        errorDiv.style.padding = '20px';
+                        errorDiv.style.borderRadius = '8px';
+                        errorDiv.style.maxWidth = '80%';
+                        errorDiv.style.textAlign = 'center';
+                        errorDiv.style.zIndex = '1001';
+                        errorDiv.innerHTML = `
+                            <h3 style="color: #ff5555; margin-top: 0;">Three.js 로드 실패</h3>
+                            <p>3D 애니메이션을 위한 필수 라이브러리 로드에 실패했습니다.</p>
+                            <p>가능한 해결 방법:</p>
+                            <ul style="text-align: left;">
+                                <li>인터넷 연결을 확인해주세요</li>
+                                <li>브라우저를 최신 버전으로 업데이트하세요</li>
+                                <li>다른 브라우저(Chrome, Firefox, Safari)에서 시도해보세요</li>
+                                <li>브라우저 캐시를 비우고 새로고침해보세요</li>
+                            </ul>
+                            <button onclick="window.location.reload()" style="padding: 8px 16px; background: #2962ff; border: none; color: white; border-radius: 4px; margin-top: 10px; cursor: pointer;">페이지 새로고침</button>
+                        `;
+                        document.body.appendChild(errorDiv);
+                        return;
+                    }
+                    
+                    // 상태 업데이트
+                    statusDiv.textContent = `Three.js 로딩 중... (${currentCdnIndex + 1}/${cdnUrls.length})`;
+                    
+                    // 다음 CDN에서 로드 시도
+                    const script = document.createElement('script');
+                    script.src = cdnUrls[currentCdnIndex];
+                    
+                    script.onload = function() {
+                        // 로드 성공
+                        console.log('Three.js 로드 성공 (CDN):', THREE.REVISION);
+                        statusDiv.textContent = `Three.js 로드 성공 (버전: ${THREE.REVISION})`;
+                        statusDiv.style.color = '#00ff00';
+                        
+                        // 3초 후 상태 메시지 숨기기
+                        setTimeout(function() {
+                            statusDiv.style.opacity = '0';
+                            statusDiv.style.transition = 'opacity 0.5s';
+                            
+                            // 애니메이션 매니저 재초기화 시도
+                            if (window.ballAnimationManager) {
+                                window.ballAnimationManager.reInitialize();
+                            }
+                        }, 3000);
+                    };
+                    
+                    script.onerror = function() {
+                        // 이 CDN 실패, 다음 시도
+                        currentCdnIndex++;
+                        loadFromNextCdn();
+                    };
+                    
+                    document.head.appendChild(script);
+                }
+                
+                // 첫 번째 CDN 로드 시작
+                loadFromNextCdn();
+            } else {
+                console.log('Three.js 로드 성공 (로컬):', THREE.REVISION);
+            }
+        })();
+    </script>
+    
+    <!-- 애니메이션 스크립트 -->
+    <script src="/static/js/ball-animation.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 요소들 가져오기
+            const fileInput = document.getElementById('fileInput');
+            const previewImage = document.getElementById('previewImage');
+            const imageInfo = document.getElementById('imageInfo');
+            const startBtn = document.getElementById('startBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const testBtn = document.getElementById('testBtn');
+            const lottoSimBtn = document.getElementById('lottoSimBtn');
+            const ballContainer = document.getElementById('ballContainer');
+            
+            // 애니메이션 매니저 인스턴스 생성 및 초기화
+            const ballAnimationManager = new BallAnimationManager();
+            
+            // 비동기 초기화
+            ballAnimationManager.init('animationContainer').then((success) => {
+                if (success) {
+                    console.log('애니메이션 매니저 초기화 성공');
+                    // 테스트 버튼들 활성화
+                    testBtn.disabled = false;
+                    lottoSimBtn.disabled = false;
+                } else {
+                    console.error('애니메이션 매니저 초기화 실패');
+                    // 오류 상태 표시
+                    const errorMsg = document.createElement('div');
+                    errorMsg.style.color = 'red';
+                    errorMsg.style.textAlign = 'center';
+                    errorMsg.style.padding = '10px';
+                    errorMsg.textContent = '3D 애니메이션 초기화에 실패했습니다. 브라우저가 WebGL을 지원하는지 확인하세요.';
+                    document.querySelector('.container').insertBefore(errorMsg, document.querySelector('.animation-container'));
+                }
+            });
+            
+            // 테스트 이미지 로드 버튼
+            testBtn.addEventListener('click', () => {
+                // 테스트 이미지 URL (기본 로또 이미지)
+                const testImageUrl = 'https://img.sportsworldi.com/content/image/2020/07/20/20200720511893.jpg';
+                
+                // 이미지 로드
+                previewImage.src = testImageUrl;
+                previewImage.style.display = 'block';
+                imageInfo.textContent = '테스트 이미지 로드됨';
+                startBtn.disabled = false;
+            });
+            
+            // 파일 업로드 이벤트
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // 파일 정보 표시
+                imageInfo.textContent = `${file.name} (${Math.round(file.size / 1024)}KB)`;
+                
+                // 이미지 미리보기
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImage.src = e.target.result;
+                    previewImage.style.display = 'block';
+                    startBtn.disabled = false;
+                };
+                reader.readAsDataURL(file);
+            });
+            
+            // 애니메이션 시작 버튼
+            startBtn.addEventListener('click', () => {
+                if (!previewImage.src) {
+                    alert('먼저 이미지를 업로드해주세요.');
+                    return;
+                }
+                
+                // 시작 버튼 비활성화
+                startBtn.disabled = true;
+                
+                // 애니메이션 시작
+                ballAnimationManager.processUserImage(previewImage.src, (success) => {
+                    if (success) {
+                        resetBtn.disabled = false;
+                        
+                        // 타이머 설정 (애니메이션 완료 예상 시간 후)
+                        setTimeout(() => {
+                            // 번호 표시
+                            displayNumbers(ballAnimationManager.selectedNumbers);
+                            console.log("애니메이션 완료, 번호:", ballAnimationManager.selectedNumbers);
+                            alert("애니메이션 완료, 번호: " + ballAnimationManager.selectedNumbers.join(", "));
+                        }, 12000);
+                    } else {
+                        alert('애니메이션 처리에 실패했습니다.');
+                        console.error('애니메이션 처리 실패');
+                        startBtn.disabled = false;
+                    }
+                });
+            });
+            
+            // 초기화 버튼
+            resetBtn.addEventListener('click', () => {
+                ballAnimationManager.reset();
+                ballContainer.innerHTML = '';
+                startBtn.disabled = false;
+                resetBtn.disabled = true;
+            });
+            
+            // 번호 표시 함수
+            function displayNumbers(numbers) {
+                if (!numbers || numbers.length !== 6) return;
+                
+                ballContainer.innerHTML = '';
+                
+                numbers.forEach(num => {
+                    const ball = document.createElement('div');
+                    ball.className = 'number-ball';
+                    ball.textContent = num;
+                    
+                    // 번호 범위에 따라 색상 설정
+                    let color;
+                    if (num <= 10) color = '#FF3D7F'; // 빨강
+                    else if (num <= 20) color = '#3DA5FF'; // 파랑
+                    else if (num <= 30) color = '#3DFFCC'; // 녹색
+                    else if (num <= 40) color = '#FFD93D'; // 노랑
+                    else color = '#FF8E3D'; // 주황
+                    
+                    ball.style.backgroundColor = color;
+                    ballContainer.appendChild(ball);
+                });
+            }
+            
+            // 애니메이션 상태 업데이트 함수
+            function updateAnimationStatus(message, color = '#888') {
+                const statusElement = document.getElementById('animationStatus');
+                if (statusElement) {
+                    statusElement.textContent = `애니메이션 상태: ${message}`;
+                    statusElement.style.color = color;
+                }
+            }
+            
+            // 로또 시뮬레이션 진행 상황 표시
+            ballAnimationManager.setProgressCallback = function(step, total, message) {
+                updateAnimationStatus(`${message} (${step}/${total})`, '#2962ff');
+            };
+            
+            // 사운드 토글 버튼
+            const soundToggleBtn = document.getElementById('soundToggleBtn');
+            let soundEnabled = true;
+            
+            soundToggleBtn.addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+                if (ballAnimationManager) {
+                    ballAnimationManager.soundEnabled = soundEnabled;
+                }
+                
+                soundToggleBtn.textContent = soundEnabled ? '🔊 사운드 ON' : '🔇 사운드 OFF';
+                soundToggleBtn.style.background = soundEnabled ? '#28a745' : '#6c757d';
+            });
+            
+            // 슬로우 모션 버튼
+            const slowModeBtn = document.getElementById('slowModeBtn');
+            let slowMotion = false;
+            
+            slowModeBtn.addEventListener('click', () => {
+                slowMotion = !slowMotion;
+                if (ballAnimationManager) {
+                    ballAnimationManager.friction = slowMotion ? 0.99 : 0.98;
+                    ballAnimationManager.gravity = slowMotion ? -0.005 : -0.02;
+                }
+                
+                slowModeBtn.textContent = slowMotion ? '🚀 일반 속도' : '🐌 슬로우 모션';
+                slowModeBtn.style.background = slowMotion ? '#fd7e14' : '#6f42c1';
+            });
+            
+            // 카메라 모드 버튼
+            const cameraBtn = document.getElementById('cameraBtn');
+            let cameraMode = 0; // 0: 고정, 1: 회전, 2: 자유시점
+            
+            cameraBtn.addEventListener('click', () => {
+                cameraMode = (cameraMode + 1) % 3;
+                const modes = ['📷 고정 카메라', '🔄 회전 카메라', '🎮 자유 시점'];
+                cameraBtn.textContent = modes[cameraMode];
+                
+                if (ballAnimationManager) {
+                    ballAnimationManager.cameraMode = cameraMode;
+                }
+            });
+            
+            // 특수 효과 버튼
+            const effectsBtn = document.getElementById('effectsBtn');
+            let specialEffects = true;
+            
+            effectsBtn.addEventListener('click', () => {
+                specialEffects = !specialEffects;
+                if (ballAnimationManager) {
+                    ballAnimationManager.specialEffectsEnabled = specialEffects;
+                }
+                
+                effectsBtn.textContent = specialEffects ? '✨ 특수 효과 ON' : '⚪ 특수 효과 OFF';
+                effectsBtn.style.background = specialEffects ? '#ff6b35' : '#6c757d';
+            });
+            
+            // 볼륨 슬라이더
+            const volumeSlider = document.getElementById('volumeSlider');
+            const volumeValue = document.getElementById('volumeValue');
+            
+            volumeSlider.addEventListener('input', (e) => {
+                const volume = parseInt(e.target.value);
+                volumeValue.textContent = volume;
+                
+                if (ballAnimationManager && ballAnimationManager.setMasterVolume) {
+                    ballAnimationManager.setMasterVolume(volume / 100);
+                }
+                
+                // 슬라이더 색상 업데이트
+                const percentage = volume;
+                volumeSlider.style.background = `linear-gradient(to right, #2962ff ${percentage}%, #ddd ${percentage}%)`;
+            });
+            
+            // 환경음 토글
+            const ambientToggleBtn = document.getElementById('ambientToggleBtn');
+            let ambientEnabled = false;
+            
+            ambientToggleBtn.addEventListener('click', () => {
+                ambientEnabled = !ambientEnabled;
+                
+                if (ballAnimationManager && ballAnimationManager.ambientGainNode) {
+                    const targetVolume = ambientEnabled ? 0.05 : 0;
+                    ballAnimationManager.ambientGainNode.gain.setValueAtTime(
+                        targetVolume, 
+                        ballAnimationManager.audioContext.currentTime
+                    );
+                }
+                
+                ambientToggleBtn.textContent = ambientEnabled ? '🌀 환경음 ON' : '🌀 환경음 OFF';
+                ambientToggleBtn.style.background = ambientEnabled ? '#28a745' : '#6c757d';
+            });
+            
+            // 리버브 토글
+            const reverbToggleBtn = document.getElementById('reverbToggleBtn');
+            let reverbEnabled = true;
+            
+            reverbToggleBtn.addEventListener('click', () => {
+                reverbEnabled = !reverbEnabled;
+                
+                // 리버브 상태는 각 사운드 재생 시 useReverb 파라미터로 제어됩니다
+                if (ballAnimationManager) {
+                    ballAnimationManager.useReverbByDefault = reverbEnabled;
+                }
+                
+                reverbToggleBtn.textContent = reverbEnabled ? '🏛️ 리버브 ON' : '🏛️ 리버브 OFF';
+                reverbToggleBtn.style.background = reverbEnabled ? '#17a2b8' : '#6c757d';
+            });
+            
+            // 테스트 사운드 버튼
+            const testSoundBtn = document.getElementById('testSoundBtn');
+            
+            testSoundBtn.addEventListener('click', () => {
+                if (ballAnimationManager && soundEnabled) {
+                    // 다양한 사운드 테스트 시퀀스
+                    ballAnimationManager.playBallBounceSound(1.0);
+                    
+                    setTimeout(() => {
+                        ballAnimationManager.playBallSelectSound();
+                    }, 500);
+                    
+                    setTimeout(() => {
+                        ballAnimationManager.playWinSound();
+                    }, 1500);
+                    
+                    // 버튼 비활성화 (테스트 중)
+                    testSoundBtn.disabled = true;
+                    testSoundBtn.textContent = '🎵 재생 중...';
+                    
+                    setTimeout(() => {
+                        testSoundBtn.disabled = false;
+                        testSoundBtn.textContent = '🎵 테스트';
+                    }, 4000);
+                }
+            });
+            
+            // 초기 테스트 애니메이션 (큐브 회전)
+            function startBasicTest() {
+                if (!ballAnimationManager.scene || !ballAnimationManager.renderer) {
+                    console.error('애니메이션 매니저가 초기화되지 않았습니다.');
+                    return;
+                }
+                
+                console.log('기본 테스트 준비 완료');
+            }
+            
+            // 초기화 완료 후 대기 상태로 유지
+            
+            // 실제 로또 시뮬레이션 버튼
+            lottoSimBtn.addEventListener('click', () => {
+                console.log('실제 로또 시뮬레이션 시작');
+                
+                // 모든 버튼 비활성화
+                startBtn.disabled = true;
+                resetBtn.disabled = true;
+                testBtn.disabled = true;
+                lottoSimBtn.disabled = true;
+                
+                // 이전 결과 지우기
+                ballContainer.innerHTML = '';
+                
+                // 선택 완료 콜백 설정
+                ballAnimationManager.setSelectionCompleteCallback((selectedNumbers) => {
+                    console.log('선택 완료된 번호들:', selectedNumbers);
+                    displayNumbers(selectedNumbers);
+                    
+                    // 버튼들 다시 활성화
+                    resetBtn.disabled = false;
+                    lottoSimBtn.disabled = false;
+                    
+                    // 결과를 서버에 전송 (선택사항)
+                    sendResultToServer(selectedNumbers);
+                });
+                
+                // 로또 시뮬레이션 시작
+                const success = ballAnimationManager.startLottoSimulation();
+                
+                if (!success) {
+                    alert('시뮬레이션을 시작할 수 없습니다. 애니메이션이 초기화되지 않았습니다.');
+                    lottoSimBtn.disabled = false;
+                }
+            });
+            
+            // 서버에 결과 전송 함수
+            function sendResultToServer(numbers) {
+                fetch('/api/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        generated_numbers: numbers,
+                        method: '3D_SIMULATION',
+                        timestamp: new Date().toISOString()
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('서버 응답:', data);
+                })
+                .catch(error => {
+                    console.error('서버 전송 오류:', error);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
