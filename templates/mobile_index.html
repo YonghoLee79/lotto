@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="과학적 분자운동 시뮬레이션 기반 로또 번호 생성기">
+    <title>과학적 로또 - AI 번호 생성기</title>
+    
+    <!-- PWA 메타 태그 -->
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="과학적 로또">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile-styles.css') }}">
+    
+    <!-- 폰트 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- 아이콘 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- 로딩 스피너 -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner">
+            <div class="double-bounce1"></div>
+            <div class="double-bounce2"></div>
+        </div>
+        <p>AI가 번호를 분석중입니다...</p>
+    </div>
+
+    <!-- 헤더 -->
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">
+                <i class="fas fa-atom"></i>
+                과학적 로또
+            </h1>
+            <div class="header-info">
+                <span class="badge scientific">분자운동 시뮬레이션</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 컨테이너 -->
+    <main class="main-container">
+        <!-- 히어로 섹션 -->
+        <section class="hero-section">
+            <div class="container">
+                <h2 class="hero-title">AI 과학적 분석으로<br>당첨 확률을 높이세요</h2>
+                <p class="hero-description">분자운동 시뮬레이션과 통계적 열역학을 활용한 차세대 로또 번호 생성</p>
+            </div>
+        </section>
+
+        <!-- 번호 생성 섹션 -->
+        <section class="generation-section">
+            <div class="container">
+                <div class="generation-card">
+                    <h3><i class="fas fa-magic"></i> 번호 생성</h3>
+                    
+                    <div class="button-group">
+                        <button id="btn-single" class="btn btn-primary">
+                            <i class="fas fa-dice-one"></i>
+                            즉석 생성
+                        </button>
+                        <button id="btn-batch" class="btn btn-secondary">
+                            <i class="fas fa-chart-line"></i>
+                            분석 생성 (10회)
+                        </button>
+                    </div>
+                    
+                    <div class="simulation-controls">
+                        <label for="simulation-count">시뮬레이션 횟수:</label>
+                        <select id="simulation-count" class="form-select">
+                            <option value="5">5회 (빠름)</option>
+                            <option value="10" selected>10회 (권장)</option>
+                            <option value="20">20회 (정밀)</option>
+                            <option value="50">50회 (최고정밀)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 결과 표시 섹션 -->
+        <section class="results-section">
+            <div class="container">
+                <!-- 생성된 번호 -->
+                <div id="number-result" class="result-card hidden">
+                    <h3><i class="fas fa-star"></i> 생성된 번호</h3>
+                    <div id="lotto-numbers" class="lotto-numbers"></div>
+                    <div id="number-analysis" class="number-analysis"></div>
+                </div>
+
+                <!-- 분석 결과 -->
+                <div id="analysis-result" class="result-card hidden">
+                    <h3><i class="fas fa-chart-bar"></i> 분석 결과</h3>
+                    <div id="analysis-content" class="analysis-content"></div>
+                </div>
+
+                <!-- 예측 번호 -->
+                <div id="prediction-result" class="result-card hidden">
+                    <h3><i class="fas fa-crystal-ball"></i> AI 예측 번호</h3>
+                    <div id="prediction-content" class="prediction-content"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 통계 섹션 -->
+        <section class="stats-section">
+            <div class="container">
+                <h3><i class="fas fa-chart-pie"></i> 실시간 통계</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-simulations">0</div>
+                        <div class="stat-label">총 시뮬레이션</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="memory-usage">0MB</div>
+                        <div class="stat-label">메모리 사용량</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="confidence-level">0%</div>
+                        <div class="stat-label">예측 신뢰도</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 기능 설명 섹션 -->
+        <section class="features-section">
+            <div class="container">
+                <h3>과학적 분석 기술</h3>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <i class="fas fa-atom"></i>
+                        <h4>분자운동 시뮬레이션</h4>
+                        <p>Jackson-Hwang RNG 알고리즘으로 진정한 무작위성 구현</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-thermometer-half"></i>
+                        <h4>통계적 열역학</h4>
+                        <p>엔트로피 분석을 통한 패턴 최적화</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-brain"></i>
+                        <h4>AI 예측 분석</h4>
+                        <p>머신러닝 기반 트렌드 예측</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 과학적 로또. 분자운동 시뮬레이션 기반 번호 생성.</p>
+            <div class="footer-links">
+                <button id="btn-cleanup" class="btn-link">메모리 정리</button>
+                <button id="btn-status" class="btn-link">시스템 상태</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 토스트 알림 -->
+    <div id="toast" class="toast hidden">
+        <div class="toast-content">
+            <span id="toast-message"></span>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/mobile-app.js') }}"></script>
+</body>
+</html>

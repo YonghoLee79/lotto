@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>페이지를 찾을 수 없습니다 - 과학적 로또</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile-styles.css') }}">
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-content">
+            <h1>404</h1>
+            <h2>페이지를 찾을 수 없습니다</h2>
+            <p>요청하신 페이지가 존재하지 않습니다.</p>
+            <a href="/" class="btn btn-primary">홈으로 돌아가기</a>
+        </div>
+    </div>
+    
+    <style>
+        .error-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .error-content h1 {
+            font-size: 6rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .error-content h2 {
+            color: white;
+            margin-bottom: 1rem;
+        }
+        
+        .error-content p {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 2rem;
+        }
+    </style>
+</body>
+</html>

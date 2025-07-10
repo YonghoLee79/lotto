@@ -1,22 +1,14 @@
-import random
-import math
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from mpl_toolkits.mplot3d import Axes3D
-import pandas as pd
-import time
-import os
-import json
-from collections import Counter
-from flask import Flask, jsonify, request
+"""
+Railway 배포용 메인 엔트리 포인트
+Web App을 실행합니다.
+"""
+# Railway가 main.py를 찾으므로 web_app을 import
+from web_app import app
 
-from jackson_hwang_rng import JacksonHwangRNG
-from entropy_analyzer import EntropyDriftAnalyzer
-from statistical_thermodynamics import StatisticalThermodynamics
-from image_quantum_analyzer import ImageQuantumAnalyzer
-from subscription_ui import SubscriptionUI
-from config import MOLECULAR_SIMULATION_CONFIG, SIMULATION_CONSTANTS
+if __name__ == "__main__":
+    import os
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False)
 
 # 3D 벡터 연산을 위한 클래스
 def vec3(x, y, z):
