@@ -2,10 +2,10 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pip install -r requirements.txt"
+    "buildCommand": "pip install --no-cache-dir -r requirements.txt"
   },
   "deploy": {
-    "startCommand": "gunicorn web_app:app --bind 0.0.0.0:$PORT --workers 1 --worker-class sync --timeout 60 --keep-alive 2 --max-requests 1000",
+    "startCommand": "python -c 'from web_app import app; import os; app.run(host=\"0.0.0.0\", port=int(os.environ.get(\"PORT\", 8080)), debug=False)'",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }

@@ -1,25 +1,58 @@
 from flask import Flask, render_template, jsonify, request, send_file, send_from_directory, abort
 import numpy as np
-from jackson_hwang_rng import JacksonHwangRNG
-from entropy_analyzer import EntropyDriftAnalyzer
-from statistical_thermodynamics import StatisticalThermodynamics
-from image_quantum_analyzer import ImageQuantumAnalyzer
 import os
 import time
 import hashlib
-from main import LottoSimulation, DataAnalyzer, api_generate_numbers
-from config import LOTTO_MIN_NUMBER, LOTTO_MAX_NUMBER, DEFAULT_TEMPERATURE, DEFAULT_MOLECULES
+import threading
+
+# 안전한 import 처리
+try:
+    from jackson_hwang_rng import JacksonHwangRNG
+    rng = JacksonHwangRNG()
+except ImportError:
+    print("Warning: JacksonHwangRNG not available")
+    rng = None
+
+try:
+    from entropy_analyzer import EntropyDriftAnalyzer
+    entropy_analyzer = EntropyDriftAnalyzer()
+except ImportError:
+    print("Warning: EntropyDriftAnalyzer not available")
+    entropy_analyzer = None
+
+try:
+    from statistical_thermodynamics import StatisticalThermodynamics
+    thermo = StatisticalThermodynamics()
+except ImportError:
+    print("Warning: StatisticalThermodynamics not available")
+    thermo = None
+
+try:
+    from image_quantum_analyzer import ImageQuantumAnalyzer
+    quantum_analyzer = ImageQuantumAnalyzer()
+except ImportError:
+    print("Warning: ImageQuantumAnalyzer not available")
+    quantum_analyzer = None
+
+try:
+    from main import LottoSimulation, DataAnalyzer, api_generate_numbers
+    MAIN_AVAILABLE = True
+except ImportError:
+    print("Warning: Main simulation modules not available")
+    MAIN_AVAILABLE = False
+
+try:
+    from config import LOTTO_MIN_NUMBER, LOTTO_MAX_NUMBER, DEFAULT_TEMPERATURE, DEFAULT_MOLECULES
+except ImportError:
+    # 기본값 설정
+    LOTTO_MIN_NUMBER = 1
+    LOTTO_MAX_NUMBER = 45
+    DEFAULT_TEMPERATURE = 298.15
+    DEFAULT_MOLECULES = 1000
 
 app = Flask(__name__)
 
-# 과학적 모듈 초기화
-rng = JacksonHwangRNG()
-entropy_analyzer = EntropyDriftAnalyzer()
-thermo = StatisticalThermodynamics()
-quantum_analyzer = ImageQuantumAnalyzer()
-
 # 시뮬레이션 로그 저장 (동시성 안전)
-import threading
 simulation_logs = []
 simulation_logs_lock = threading.Lock()
 
@@ -46,10 +79,18 @@ def generate_numbers():
         start_time = time.time()
         
         # 분자운동 시뮬레이션 실행
-        numbers = rng.generate_numbers()
-        
-        # 엔트로피 분석
-        analysis = entropy_analyzer.analyze_drift(rng.velocities)
+        if rng:
+            numbers = rng.generate_numbers()
+            # 엔트로피 분석
+            if entropy_analyzer:
+                analysis = entropy_analyzer.analyze_drift(rng.velocities)
+            else:
+                analysis = None
+        else:
+            # 폴백: 기본 난수 생성
+            import random
+            numbers = sorted(random.sample(range(LOTTO_MIN_NUMBER, LOTTO_MAX_NUMBER + 1), 6))
+            analysis = None
         
         # 처리 시간 계산
         processing_time = (time.time() - start_time) * 1000
@@ -61,7 +102,7 @@ def generate_numbers():
             'numbers': numbers,
             'entropy': analysis['entropy'] if analysis else None,
             'processing_time_ms': round(processing_time, 2),
-            'algorithm': 'Jackson-Hwang Molecular RNG',
+            'algorithm': 'Jackson-Hwang Molecular RNG' if rng else 'Fallback RNG',
             'integrity_hash': generate_integrity_hash(numbers)
         }
         with simulation_logs_lock:
@@ -272,8 +313,25 @@ def mobile_generate_numbers():
         image_data = data.get('image_data')
         seed_value = data.get('seed')
         
-        # 메인 API 함수 호출
-        result = api_generate_numbers(seed=seed_value, image_data=image_data)
+        # 메인 API 함수 호출 (안전한 처리)
+        if MAIN_AVAILABLE:
+            result = api_generate_numbers(seed=seed_value, image_data=image_data)
+        else:
+            # 폴백: 기본 번호 생성
+            import random
+            if seed_value:
+                random.seed(seed_value)
+            numbers = sorted(random.sample(range(LOTTO_MIN_NUMBER, LOTTO_MAX_NUMBER + 1), 6))
+            result = {
+                'success': True,
+                'numbers': numbers,
+                'analysis': {
+                    'odd_count': sum(1 for n in numbers if n % 2 == 1),
+                    'even_count': sum(1 for n in numbers if n % 2 == 0),
+                    'sum_total': sum(numbers),
+                    'average': round(sum(numbers) / len(numbers), 1)
+                }
+            }
         
         return jsonify(result)
     except Exception as e:

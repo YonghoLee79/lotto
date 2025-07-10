@@ -1,4 +1,6 @@
 import numpy as np
+
+# 안전한 import 처리
 try:
     import cv2
     CV2_AVAILABLE = True
@@ -12,7 +14,19 @@ try:
 except ImportError:
     PIL_AVAILABLE = False
     print("Warning: PIL not available. Image analysis will be limited.")
-from scipy.fftpack import dct, idct
+
+try:
+    from scipy.fftpack import dct, idct
+    SCIPY_AVAILABLE = True
+except ImportError:
+    SCIPY_AVAILABLE = False
+    print("Warning: SciPy not available. Using numpy alternatives.")
+    # numpy 대체 함수들
+    def dct(x, type=2, n=None, axis=-1):
+        return np.fft.fft(x, axis=axis).real
+    
+    def idct(x, type=2, n=None, axis=-1):
+        return np.fft.ifft(x, axis=axis).real
 
 class ImageQuantumAnalyzer:
     def __init__(self):

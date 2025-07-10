@@ -1,1 +1,1 @@
-web: gunicorn web_app:app --bind 0.0.0.0:$PORT --workers 1 --worker-class sync --max-requests 1000 --max-requests-jitter 100 --timeout 60 --keep-alive 2
+web: python -c "from web_app import app; import os; app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=False)"
